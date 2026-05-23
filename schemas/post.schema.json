@@ -51,6 +51,8 @@
     "featuredImageAlt": { "type": "string" },
     "excerpt": { "type": "string" },
     "series": { "type": "string" },
+    "sourceName": { "type": "string" },
+    "sourceUrl": { "type": "string" },
     "seoTitle": { "type": "string" },
     "seoDescription": { "type": "string" },
     "canonicalUrl": { "type": "string" },

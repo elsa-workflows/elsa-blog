@@ -84,7 +84,9 @@ function toIndexPost(post, authors) {
     url: publicPostUrl(post.slug),
     contentUrl: artifactUrl(`posts/${post.slug}.json`),
     featuredImage: resolveAssetUrl(post, post.featuredImage),
-    featuredImageAlt: post.featuredImageAlt
+    featuredImageAlt: post.featuredImageAlt,
+    sourceName: post.sourceName,
+    sourceUrl: post.sourceUrl
   };
 }
 
@@ -99,6 +101,8 @@ async function toDetailPost(post, authors) {
     canonicalUrl: post.canonicalUrl ?? publicPostUrl(post.slug),
     excerpt: post.excerpt,
     series: post.series,
+    sourceName: post.sourceName,
+    sourceUrl: post.sourceUrl,
     redirectFrom: post.redirectFrom ?? [],
     related: post.related ?? [],
     seo: {

@@ -37,6 +37,8 @@ export const postSchema = z.object({
   featuredImageAlt: z.string().optional(),
   excerpt: z.string().optional(),
   series: z.string().optional(),
+  sourceName: z.string().optional(),
+  sourceUrl: z.string().optional(),
   seoTitle: z.string().optional(),
   seoDescription: z.string().optional(),
   canonicalUrl: z.string().optional(),
@@ -95,7 +97,7 @@ export async function validateContent() {
 
     if (post.featuredImage) {
       const assetPath = path.resolve(path.dirname(path.join(rootDir, post.sourcePath)), post.featuredImage);
-      if (!await exists(assetPath)) {
+      if (!isAbsoluteUrl(post.featuredImage) && !await exists(assetPath)) {
         errors.push(`${post.sourcePath}: featuredImage does not exist at ${post.featuredImage}`);
       }
     }
@@ -119,6 +121,10 @@ export function artifactUrl(relativePath) {
 export function resolveAssetUrl(post, assetPath) {
   if (!assetPath) {
     return undefined;
+  }
+
+  if (isAbsoluteUrl(assetPath)) {
+    return assetPath;
   }
 
   const sourceDir = path.dirname(post.sourcePath);
@@ -151,4 +157,8 @@ async function exists(file) {
   } catch {
     return false;
   }
+}
+
+function isAbsoluteUrl(value) {
+  return /^https?:\/\//i.test(value);
 }

@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "validate": "node scripts/validate.mjs",
-    "build": "node scripts/build.mjs"
+    "build": "node scripts/build.mjs",
+    "import:medium": "node scripts/import-medium-export.mjs"
   },
   "dependencies": {
     "fast-glob": "^3.3.3",

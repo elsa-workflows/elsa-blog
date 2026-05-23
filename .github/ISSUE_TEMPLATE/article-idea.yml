@@ -1,0 +1,39 @@
+name: Article idea
+description: Suggest a new Elsa blog article
+title: "Article idea: "
+labels: ["article-idea"]
+body:
+  - type: input
+    id: title
+    attributes:
+      label: Proposed title
+    validations:
+      required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What should this article cover?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      options:
+        - Product
+        - Engineering
+        - Tutorial
+        - Release
+        - Community
+        - Case Study
+    validations:
+      required: true
+
+  - type: textarea
+    id: audience
+    attributes:
+      label: Intended audience
+      description: Who is this article for?

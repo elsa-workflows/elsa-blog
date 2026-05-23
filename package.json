@@ -1,0 +1,17 @@
+{
+  "name": "elsa-blog",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "validate": "node scripts/validate.mjs",
+    "build": "node scripts/build.mjs"
+  },
+  "dependencies": {
+    "fast-glob": "^3.3.3",
+    "feed": "^4.2.2",
+    "gray-matter": "^4.0.3",
+    "marked": "^15.0.12",
+    "sitemap": "^8.0.0",
+    "zod": "^3.24.1"
+  }
+}

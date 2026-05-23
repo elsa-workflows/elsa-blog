@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Elsa Blog Author",
+  "type": "object",
+  "required": ["id", "name"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "name": { "type": "string", "minLength": 1 },
+    "avatar": { "type": "string" },
+    "bio": { "type": "string" },
+    "url": { "type": "string" }
+  },
+  "additionalProperties": false
+}

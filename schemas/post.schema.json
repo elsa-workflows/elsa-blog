@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Elsa Blog Post",
+  "type": "object",
+  "required": [
+    "title",
+    "slug",
+    "description",
+    "publishedAt",
+    "status",
+    "authors",
+    "tags",
+    "category"
+  ],
+  "properties": {
+    "title": { "type": "string", "minLength": 1 },
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "description": { "type": "string", "minLength": 20 },
+    "publishedAt": {
+      "type": "string",
+      "format": "date"
+    },
+    "updatedAt": {
+      "type": ["string", "null"],
+      "format": "date"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "published", "archived"]
+    },
+    "authors": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+      }
+    },
+    "category": {
+      "type": "string",
+      "enum": ["Product", "Engineering", "Tutorial", "Release", "Community", "Case Study"]
+    },
+    "featuredImage": { "type": "string" },
+    "featuredImageAlt": { "type": "string" },
+    "excerpt": { "type": "string" },
+    "series": { "type": "string" },
+    "seoTitle": { "type": "string" },
+    "seoDescription": { "type": "string" },
+    "canonicalUrl": { "type": "string" },
+    "redirectFrom": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "related": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "additionalProperties": false
+}

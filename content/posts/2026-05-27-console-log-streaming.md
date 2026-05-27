@@ -34,7 +34,11 @@ The idea behind ConsoleLogStreaming is straightforward:
 - expose it through a REST API,
 - allow client applications to subscribe to the stream.
 
-The project lives here:
+The product website is here:
+
+https://www.consolelogstreaming.dev/
+
+And the project lives here:
 
 https://github.com/valence-works/console-log-streaming
 
@@ -137,6 +141,10 @@ It's not trying to replace structured logging systems or observability platforms
 It simply provides a lightweight mechanism for exposing console output to remote clients in real time.
 
 Sometimes that's all you need.
+
+Product website:
+
+[https://www.consolelogstreaming.dev/](https://www.consolelogstreaming.dev/)
 
 Project repository:
 

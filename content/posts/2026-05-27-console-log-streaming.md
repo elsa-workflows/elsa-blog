@@ -152,9 +152,7 @@ It doesn't try to replace:
 
 Those solve different problems.
 
-This project is about runtime visibility and live streaming.
-
-That distinction matters.
+This project is about runtime visibility and live streaming, closer to `docker logs -f` than a full observability stack.
 
 ## Streaming output changes the UX
 

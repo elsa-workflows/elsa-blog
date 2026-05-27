@@ -91,7 +91,7 @@ function toIndexPost(post, authors) {
 }
 
 async function toDetailPost(post, authors) {
-  const html = await marked.parse(post.markdown);
+  const html = normalizePostHtml(await marked.parse(post.markdown), post);
 
   return {
     ...toIndexPost(post, authors),
@@ -111,6 +111,82 @@ async function toDetailPost(post, authors) {
       openGraphImage: resolveAssetUrl(post, post.featuredImage)
     }
   };
+}
+
+function normalizePostHtml(html, post) {
+  if (post.sourceName !== "Medium") {
+    return html;
+  }
+
+  let normalized = html.trim();
+  normalized = removeLeadingHeading(normalized, "h3", post.title);
+  normalized = removeLeadingHeading(normalized, "h4", post.description);
+
+  if (post.featuredImage) {
+    normalized = removeFeaturedFigure(normalized, post.featuredImage);
+  }
+
+  normalized = removeEmptyElements(normalized);
+
+  return normalized;
+}
+
+function removeLeadingHeading(html, tagName, expectedText) {
+  const pattern = new RegExp(`<${tagName}[^>]*>([\\s\\S]*?)<\\/${tagName}>`, "i");
+  const match = html.match(pattern);
+
+  if (!match || match.index > 200) {
+    return html;
+  }
+
+  if (normalizeText(match[1]) !== normalizeText(expectedText)) {
+    return html;
+  }
+
+  return `${html.slice(0, match.index)}${html.slice(match.index + match[0].length)}`.trim();
+}
+
+function removeFeaturedFigure(html, featuredImage) {
+  const pattern = /<figure[\s\S]*?<img[^>]+src="([^"]+)"[\s\S]*?<\/figure>/i;
+  const match = html.match(pattern);
+
+  if (!match || match.index > 800) {
+    return html;
+  }
+
+  if (normalizeImageUrl(match[1]) !== normalizeImageUrl(featuredImage)) {
+    return html;
+  }
+
+  return `${html.slice(0, match.index)}${html.slice(match.index + match[0].length)}`.trim();
+}
+
+function normalizeText(value) {
+  return value
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, "\"")
+    .replace(/&#39;/g, "'")
+    .replace(/ /g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function normalizeImageUrl(value) {
+  return value.replace(/\/max\/\d+\//, "/max/*/");
+}
+
+function removeEmptyElements(html) {
+  let normalized = html;
+  let previous;
+
+  do {
+    previous = normalized;
+    normalized = normalized.replace(/<div>\s*<\/div>/g, "");
+  } while (normalized !== previous);
+
+  return normalized.trim();
 }
 
 function toPublicAuthor(author) {

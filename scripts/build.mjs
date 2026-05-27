@@ -26,6 +26,7 @@ try {
   }
 
   await resetDist();
+  await writeNoJekyll();
   await copyAssets();
 
   const generatedAt = new Date().toISOString();
@@ -40,9 +41,12 @@ try {
   await fs.mkdir(path.join(distDir, "posts"), { recursive: true });
 
   for (const post of detailPosts) {
-    await writeJson(`posts/${post.slug}.json`, await toDetailPost(post, authors));
+    const detailPost = await toDetailPost(post, authors);
+    await writeJson(`posts/${post.slug}.json`, detailPost);
+    await writeHtml(`posts/${post.slug}.html`, toPostHtmlDocument(detailPost));
   }
 
+  await writeHtml("posts/index.html", toPostsIndexHtml(publicPosts, authors));
   await writeRss(publicPosts, authors);
   await writeSitemap(publicPosts);
   await writeRedirects(detailPosts);
@@ -56,6 +60,10 @@ try {
 async function resetDist() {
   await fs.rm(distDir, { recursive: true, force: true });
   await fs.mkdir(distDir, { recursive: true });
+}
+
+async function writeNoJekyll() {
+  await fs.writeFile(path.join(distDir, ".nojekyll"), "", "utf8");
 }
 
 async function copyAssets() {
@@ -199,6 +207,244 @@ function toPublicAuthor(author) {
   };
 }
 
+function toPostHtmlDocument(post) {
+  const title = post.seo?.title ?? post.title;
+  const description = post.seo?.description ?? post.description;
+  const canonicalUrl = post.canonicalUrl;
+  const image = post.seo?.openGraphImage ?? post.featuredImage;
+  const authors = post.authors ?? [];
+  const authorNames = authors.map((author) => author.name);
+  const publishedAt = post.publishedAt;
+  const modifiedAt = post.updatedAt ?? post.publishedAt;
+  const jsonLd = removeUndefinedProperties({
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: title,
+    description,
+    image,
+    datePublished: publishedAt,
+    dateModified: modifiedAt,
+    author: authors.map((author) =>
+      removeUndefinedProperties({
+        "@type": "Person",
+        name: author.name,
+        url: author.url
+      })
+    ),
+    mainEntityOfPage: canonicalUrl
+  });
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>${escapeHtml(title)}</title>
+  <meta name="description" content="${escapeHtml(description)}">
+  <link rel="canonical" href="${escapeHtml(canonicalUrl)}">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="${escapeHtml(title)}">
+  <meta property="og:description" content="${escapeHtml(description)}">
+  <meta property="og:url" content="${escapeHtml(canonicalUrl)}">
+${image ? `  <meta property="og:image" content="${escapeHtml(image)}">\n` : ""}  <meta property="article:published_time" content="${escapeHtml(publishedAt)}">
+  <meta property="article:modified_time" content="${escapeHtml(modifiedAt)}">
+${authors.map((author) => `  <meta property="article:author" content="${escapeHtml(author.name)}">`).join("\n")}
+  <meta property="article:section" content="${escapeHtml(post.category)}">
+${post.tags.map((tag) => `  <meta property="article:tag" content="${escapeHtml(tag)}">`).join("\n")}
+${image ? "  <meta name=\"twitter:card\" content=\"summary_large_image\">\n" : ""}  <script type="application/ld+json">${escapeScriptJson(jsonLd)}</script>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.6;
+      color: #1f2933;
+      background: #f7f8fa;
+    }
+
+    body {
+      margin: 0;
+    }
+
+    article {
+      box-sizing: border-box;
+      width: min(760px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 56px 0 72px;
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      line-height: 1.1;
+      font-size: clamp(2rem, 6vw, 3.5rem);
+      color: #111827;
+    }
+
+    .byline {
+      margin: 0 0 28px;
+      color: #5f6b7a;
+      font-size: 0.95rem;
+    }
+
+    .featured-image {
+      display: block;
+      width: 100%;
+      height: auto;
+      margin: 0 0 28px;
+      border-radius: 8px;
+    }
+
+    .lead {
+      margin: 0 0 32px;
+      color: #334155;
+      font-size: 1.2rem;
+    }
+
+    article :where(img, video, iframe) {
+      max-width: 100%;
+    }
+
+    article :where(pre, code) {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    }
+
+    article pre {
+      overflow-x: auto;
+      padding: 16px;
+      border-radius: 8px;
+      background: #111827;
+      color: #f8fafc;
+    }
+  </style>
+</head>
+<body>
+  <article>
+    <h1>${escapeHtml(post.title)}</h1>
+    <p class="byline">By ${escapeHtml(formatAuthorList(authorNames))} &middot; ${escapeHtml(publishedAt)}</p>
+${post.featuredImage ? `    <img class="featured-image" src="${escapeHtml(post.featuredImage)}" alt="${escapeHtml(post.featuredImageAlt ?? post.title)}">\n` : ""}    <p class="lead">${escapeHtml(post.description)}</p>
+${post.html}
+  </article>
+</body>
+</html>
+`;
+}
+
+function toPostsIndexHtml(posts, authors) {
+  const listItems = posts
+    .map((post) => {
+      const postAuthors = post.authors.map((id) => authors.get(id).name);
+      return `      <li>
+        <a href="./${escapeHtml(post.slug)}.html">${escapeHtml(post.title)}</a>
+        <span>${escapeHtml(formatAuthorList(postAuthors))} &middot; ${escapeHtml(post.publishedAt)}</span>
+      </li>`;
+    })
+    .join("\n");
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Elsa Workflows Blog Posts</title>
+  <meta name="description" content="Prerendered Elsa Workflows blog posts for importing and debugging.">
+  <style>
+    :root {
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.5;
+      color: #1f2933;
+      background: #f7f8fa;
+    }
+
+    body {
+      margin: 0;
+    }
+
+    main {
+      box-sizing: border-box;
+      width: min(880px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 56px 0 72px;
+    }
+
+    h1 {
+      margin: 0 0 24px;
+      color: #111827;
+    }
+
+    ul {
+      display: grid;
+      gap: 16px;
+      padding: 0;
+      list-style: none;
+    }
+
+    li {
+      display: grid;
+      gap: 4px;
+      padding: 16px 0;
+      border-bottom: 1px solid #d8dee8;
+    }
+
+    a {
+      color: #0f5f8f;
+      font-size: 1.1rem;
+      font-weight: 700;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3px;
+    }
+
+    span {
+      color: #5f6b7a;
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Elsa Workflows Blog Posts</h1>
+    <ul>
+${listItems}
+    </ul>
+  </main>
+</body>
+</html>
+`;
+}
+
+function formatAuthorList(names) {
+  return names.join(", ");
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function escapeScriptJson(value) {
+  return JSON.stringify(value).replace(/</g, "\\u003c");
+}
+
+function removeUndefinedProperties(value) {
+  if (Array.isArray(value)) {
+    return value.map(removeUndefinedProperties);
+  }
+
+  if (!value || typeof value !== "object") {
+    return value;
+  }
+
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([, entryValue]) => entryValue !== undefined)
+      .map(([key, entryValue]) => [key, removeUndefinedProperties(entryValue)])
+  );
+}
+
 async function writeRss(posts, authors) {
   const feed = new Feed({
     title: "Elsa Workflows Blog",
@@ -269,4 +515,10 @@ async function writeJson(relativePath, value) {
   const target = path.join(distDir, relativePath);
   await fs.mkdir(path.dirname(target), { recursive: true });
   await fs.writeFile(target, `${JSON.stringify(value, null, 2)}\n`, "utf8");
+}
+
+async function writeHtml(relativePath, value) {
+  const target = path.join(distDir, relativePath);
+  await fs.mkdir(path.dirname(target), { recursive: true });
+  await fs.writeFile(target, value, "utf8");
 }

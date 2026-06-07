@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">Configuring Elsa with shell features</title>
+  <desc id="desc">An abstract modular workflow host with connected feature blocks arranged around a central orchestration graph.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <circle cx="184" cy="120" r="120" fill="#1d4ed8" opacity="0.16"/>
+  <circle cx="1030" cy="540" r="160" fill="#0f766e" opacity="0.18"/>
+  <circle cx="960" cy="96" r="82" fill="#f97316" opacity="0.15"/>
+
+  <rect x="96" y="74" width="1008" height="482" rx="30" fill="url(#panel)"/>
+  <rect x="136" y="124" width="928" height="382" rx="24" fill="#ffffff"/>
+
+  <path d="M342 205h118M740 205h118M342 421h118M740 421h118" stroke="#94a3b8" stroke-width="14" stroke-linecap="round"/>
+  <path d="M600 246v60M600 324v60" stroke="#64748b" stroke-width="14" stroke-linecap="round"/>
+
+  <rect x="214" y="162" width="128" height="86" rx="18" fill="#2563eb"/>
+  <rect x="858" y="162" width="128" height="86" rx="18" fill="#f97316"/>
+  <rect x="214" y="378" width="128" height="86" rx="18" fill="#0f766e"/>
+  <rect x="858" y="378" width="128" height="86" rx="18" fill="#7c3aed"/>
+
+  <circle cx="600" cy="314" r="88" fill="#0f172a"/>
+  <circle cx="600" cy="314" r="62" fill="#f8fafc"/>
+  <circle cx="600" cy="314" r="16" fill="#0f172a"/>
+
+  <circle cx="600" cy="226" r="14" fill="#2563eb"/>
+  <circle cx="600" cy="402" r="14" fill="#0f766e"/>
+  <circle cx="512" cy="314" r="14" fill="#f97316"/>
+  <circle cx="688" cy="314" r="14" fill="#7c3aed"/>
+
+  <circle cx="278" cy="205" r="12" fill="#dbeafe"/>
+  <circle cx="922" cy="205" r="12" fill="#ffedd5"/>
+  <circle cx="278" cy="421" r="12" fill="#ccfbf1"/>
+  <circle cx="922" cy="421" r="12" fill="#ede9fe"/>
+</svg>

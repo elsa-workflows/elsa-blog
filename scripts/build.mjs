@@ -46,6 +46,7 @@ try {
     await writeHtml(`posts/${post.slug}.html`, toPostHtmlDocument(detailPost));
   }
 
+  await writeMediumImportPages(detailPosts, authors);
   await writeHtml("posts/index.html", toPostsIndexHtml(publicPosts, authors));
   await writeRss(publicPosts, authors);
   await writeSitemap(publicPosts);
@@ -407,6 +408,41 @@ function toPostsIndexHtml(posts, authors) {
 ${listItems}
     </ul>
   </main>
+</body>
+</html>
+`;
+}
+
+async function writeMediumImportPages(posts, authors) {
+  await fs.mkdir(path.join(distDir, "medium-import"), { recursive: true });
+
+  for (const post of posts) {
+    const detailPost = await toDetailPost(post, authors);
+    await writeHtml(`medium-import/${post.slug}.html`, toMediumImportHtmlDocument(detailPost));
+  }
+}
+
+function toMediumImportHtmlDocument(post) {
+  const image = post.featuredImage;
+  const body = removeLeadingHeading(post.html, "h1", post.title);
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>${escapeHtml(post.title)}</title>
+  <meta name="description" content="${escapeHtml(post.description)}">
+  <link rel="canonical" href="${escapeHtml(post.url)}">
+${image ? `  <meta property="og:image" content="${escapeHtml(image)}">\n` : ""}</head>
+<body>
+  <article>
+    <h1>${escapeHtml(post.title)}</h1>
+${image ? `    <p><img src="${escapeHtml(image)}" alt="${escapeHtml(post.featuredImageAlt ?? post.title)}"></p>\n` : ""}${body}
+    <hr>
+    <p>Originally published at <a href="${escapeHtml(post.url)}">${escapeHtml(post.url)}</a>.</p>
+  </article>
 </body>
 </html>
 `;

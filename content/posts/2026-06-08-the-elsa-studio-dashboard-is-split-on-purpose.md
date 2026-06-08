@@ -76,6 +76,10 @@ The current Studio dashboard tests register seven built-in widgets when the dash
 
 That is a big change from "dashboard as empty real estate".
 
+Here is the new dashboard in the modular server sample, with the workflow and diagnostics widgets visible together:
+
+![Elsa Studio 3.8 dashboard showing workflow metrics, needs-attention findings, execution trend, recent activity, structured logs, console logs, and workflow hotspots](../assets/2026-06-08-the-elsa-studio-dashboard-is-split-on-purpose/dashboard.png)
+
 The bundle wiring reflects that shift too. The default Studio hosts register `AddDashboardModule`, `AddWorkflowsDashboardModule`, `AddConsoleLogsDashboardModule`, and `AddStructuredLogsDashboardModule`. In other words, this is not just an abstract extension point sitting around waiting for someone else to use it. Elsa itself now ships a richer dashboard story.
 
 There is one important nuance: the diagnostics and workflow dashboard companions are remote-gated. If the selected backend does not advertise the matching dashboard shell features, Studio does not pretend the widget is available.

@@ -3,7 +3,7 @@ title: "Groundwork: Modular Persistence Without Relational Lock-In"
 slug: "groundwork-and-the-persistence-boundary-in-elsa"
 description: "Groundwork came from a concrete Elsa maintenance problem: avoiding per-module EF Core migrations across providers, without giving up document databases such as MongoDB."
 publishedAt: "2026-06-12"
-updatedAt: "2026-06-12"
+updatedAt: "2026-06-13"
 status: "published"
 authors:
   - "sipke"
@@ -53,44 +53,59 @@ The key object is a `StorageManifest`.
 
 A manifest says: this module owns these storage units, this is their schema version, these capabilities are required, these fields are indexed, these queries are expected, and this is how physicalized the provider is allowed to make the storage.
 
-The support-ticket sample in the Groundwork repository is intentionally ordinary. It has tickets and comments. Tickets have a string identity, JSON content, optimistic concurrency, a unique ticket number, and queryable fields such as customer, status, assignee, and priority.
+The support-ticket example in the Groundwork README is intentionally ordinary. It has tickets with a string identity, JSON content, optimistic concurrency, a unique ticket-number index, and queryable fields such as customer, status, assignee, and priority.
 
-The top-level manifest is small:
+Trimmed down slightly, the manifest starts like this:
 
 ```csharp
-public static StorageManifest Create(PhysicalizationPolicy physicalization) =>
+const string DocumentKind = "supportTicket";
+const string SchemaVersion = "1.0.0";
+
+var manifest = new StorageManifest(
+    new StorageManifestIdentity("support-tickets"),
+    new StorageManifestOwner("sample.support"),
+    new StorageManifestVersion(SchemaVersion),
+    [
+        new StorageUnit(
+            new StorageUnitIdentity(DocumentKind),
+            "Support ticket",
+            new WorkloadClassification(
+                WorkloadFamily.RuntimeDefinedBusinessData,
+                WorkloadCandidateCategory.GroundworkDefault),
+            LifecyclePolicy.Mutable,
+            IdentityPolicy.StringId(),
+            TenancyPolicy.None,
+            ConcurrencyPolicy.Optimistic(),
+            SerializationPolicy.Json(),
+            [
+                Keyword("by-ticket-number", "ticketNumber", isUnique: true),
+                Keyword("by-status", "status")
+            ],
+            [
+                Query("find-by-ticket-number", "by-ticket-number"),
+                Query("list-by-status", "by-status", QuerySortSupport.Both, QueryPagingSupport.Offset)
+            ],
+            PhysicalizationPolicy.Portable)
+    ],
+    new HashSet<string> { "schema-history", "optimistic-concurrency" },
+    []);
+```
+
+The helper used by the README for indexes is explicit about what is portable:
+
+```csharp
+static IndexDeclaration Keyword(string identity, string field, bool isUnique = false) =>
     new(
-        new StorageManifestIdentity("support-tickets"),
-        new StorageManifestOwner("groundwork.sample.support"),
-        new StorageManifestVersion(SchemaVersion),
-        [
-            TicketUnit(physicalization),
-            CommentUnit(physicalization)
-        ],
-        new HashSet<string> { "schema-history", "optimistic-concurrency" },
-        []);
+        identity,
+        [new IndexField(field)],
+        IndexValueKind.Keyword,
+        isUnique,
+        true,
+        MissingValueBehavior.Excluded,
+        new HashSet<PortableQueryOperation> { PortableQueryOperation.Equal });
 ```
 
 The module is not creating an EF Core migration here. It is not creating a MongoDB collection either. It is declaring intent.
-
-One storage unit looks like this:
-
-```csharp
-new StorageUnit(
-    new StorageUnitIdentity(DocumentKind),
-    "Support ticket",
-    new WorkloadClassification(
-        WorkloadFamily.RuntimeDefinedBusinessData,
-        WorkloadCandidateCategory.GroundworkDefault),
-    LifecyclePolicy.Mutable,
-    IdentityPolicy.StringId(),
-    TenancyPolicy.None,
-    ConcurrencyPolicy.Optimistic(),
-    SerializationPolicy.Json(),
-    TicketIndexes(),
-    TicketQueries(),
-    physicalization);
-```
 
 That is the level of abstraction I wanted for Elsa modules. Not "here is a SQL table", and not "here is a Mongo collection", but "here is the durable shape this module needs".
 
@@ -98,30 +113,31 @@ That is the level of abstraction I wanted for Elsa modules. Not "here is a SQL t
 
 The part that makes this work is that Groundwork is deliberately modest about queries.
 
-For portable document storage, a module declares indexes up front:
+For portable document storage, a module declares indexes and queries up front:
 
 ```csharp
-private static IReadOnlyList<IndexDeclaration> TicketIndexes() =>
-[
-    Keyword(ByTicketNumber, "ticketNumber", isUnique: true),
-    Keyword(ByCustomer, "customerId"),
-    Keyword(ByStatus, "status"),
-    Keyword(ByAssignee, "assigneeId"),
-    Keyword(ByPriority, "priority")
-];
+Keyword("by-ticket-number", "ticketNumber", isUnique: true);
+Keyword("by-customer", "customerId");
+Keyword("by-status", "status");
+
+Query("find-by-ticket-number", "by-ticket-number");
+Query("list-by-status", "by-status", QuerySortSupport.Both, QueryPagingSupport.Offset);
 ```
 
-Each index is a contract with the provider. In the sample, `Keyword` creates a one-field keyword index that supports equality:
+Each index is a contract with the provider. In the README, `Query` mirrors the same equality-only operation:
 
 ```csharp
-new IndexDeclaration(
-    identity,
-    [new IndexField(field)],
-    IndexValueKind.Keyword,
-    isUnique,
-    true,
-    MissingValueBehavior.Excluded,
-    new HashSet<PortableQueryOperation> { PortableQueryOperation.Equal });
+static PortableQueryDeclaration Query(
+    string identity,
+    string indexName,
+    QuerySortSupport sort = QuerySortSupport.None,
+    QueryPagingSupport paging = QueryPagingSupport.None) =>
+    new(
+        identity,
+        indexName,
+        new HashSet<PortableQueryOperation> { PortableQueryOperation.Equal },
+        sort,
+        paging);
 ```
 
 That narrowness is intentional.
@@ -136,13 +152,14 @@ For Elsa, that is important. A module should not accidentally work on PostgreSQL
 
 Once a manifest exists, the provider owns the mechanics.
 
-In the support-ticket sample, startup creates the manifest and then chooses a provider:
+Startup creates the manifest and then chooses a provider. For SQLite, the README shows this:
 
 ```csharp
-var manifest = SupportTicketManifest.Create(options.EffectivePhysicalization);
+var connection = new SqliteConnection("Data Source=support-tickets.db");
+var provider = new ProviderIdentity("groundwork-sqlite", "1.0.0");
 
 await new SqliteGroundworkMaterializer(connection)
-    .MaterializeAsync(manifest, Provider("groundwork-sqlite"), cancellationToken);
+    .MaterializeAsync(manifest, provider);
 
 IDocumentStore store = new SqliteDocumentStore(connection, manifest);
 ```
@@ -150,8 +167,12 @@ IDocumentStore store = new SqliteDocumentStore(connection, manifest);
 The same sample can swap the provider:
 
 ```csharp
+var client = new MongoClient("mongodb://localhost:27017");
+var database = client.GetDatabase("support");
+var provider = new ProviderIdentity("groundwork-mongodb", "1.0.0");
+
 await new MongoDbGroundworkMaterializer(database)
-    .MaterializeAsync(manifest, Provider("groundwork-mongodb"), cancellationToken);
+    .MaterializeAsync(manifest, provider);
 
 IDocumentStore store = new MongoDbDocumentStore(database, manifest);
 ```
@@ -168,40 +189,54 @@ This is why the YesSQL comparison is useful but not quite enough. YesSQL-style p
 
 The document-store API is intentionally small.
 
-Saving a support ticket looks like this in the sample repository:
+Saving a support ticket can be as simple as serializing a CLR object or anonymous object into the JSON envelope:
 
 ```csharp
-await store.SaveAsync(
-    new SaveDocumentRequest(
-        SupportTicketManifest.DocumentKind,
-        ticket.TicketNumber,
-        SupportTicketManifest.SchemaVersion,
-        Serialize(ticket)),
-    cancellationToken);
+var ticket = new
+{
+    ticketNumber = "TCK-1001",
+    customerId = "acme",
+    status = "open",
+    priority = "high"
+};
+
+var created = await store.SaveAsync(new SaveDocumentRequest(
+    DocumentKind,
+    ticket.ticketNumber,
+    SchemaVersion,
+    JsonSerializer.Serialize(ticket)));
+
+if (created.Status != DocumentStoreWriteStatus.Saved)
+    throw new InvalidOperationException($"Ticket was not saved: {created.Status}");
 ```
 
 Querying uses a declared index:
 
 ```csharp
-var envelopes = await store.QueryAsync(
-    new DocumentStoreQuery(
-        SupportTicketManifest.DocumentKind,
-        SupportTicketManifest.ByStatus,
-        "open"),
-    cancellationToken);
+var openTickets = await store.QueryAsync(
+    new DocumentStoreQuery(DocumentKind, "by-status", "open", skip: 0, take: 25));
 ```
 
 Updating can use optimistic concurrency:
 
 ```csharp
-await store.SaveAsync(
-    new SaveDocumentRequest(
-        SupportTicketManifest.DocumentKind,
-        ticket.TicketNumber,
-        SupportTicketManifest.SchemaVersion,
-        Serialize(ticket),
-        expectedVersion),
-    cancellationToken);
+var assignedTicketJson = JsonSerializer.Serialize(new
+{
+    ticketNumber = "TCK-1001",
+    customerId = "acme",
+    status = "assigned",
+    priority = "high"
+});
+
+var updated = await store.SaveAsync(new SaveDocumentRequest(
+    DocumentKind,
+    "TCK-1001",
+    SchemaVersion,
+    assignedTicketJson,
+    ExpectedVersion: created.Document!.Version));
+
+if (updated.Status == DocumentStoreWriteStatus.ConcurrencyConflict)
+    throw new InvalidOperationException("Ticket changed before the assignment was saved.");
 ```
 
 There is nothing especially glamorous here, which is part of the point.

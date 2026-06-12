@@ -1,5 +1,5 @@
 ---
-title: "Why Elsa Needed Groundwork"
+title: "Groundwork: Modular Persistence Without Relational Lock-In"
 slug: "groundwork-and-the-persistence-boundary-in-elsa"
 description: "Groundwork came from a concrete Elsa maintenance problem: avoiding per-module EF Core migrations across providers, without giving up document databases such as MongoDB."
 publishedAt: "2026-06-12"
@@ -16,12 +16,12 @@ tags:
   - "elsa-workflows"
 featuredImage: "../assets/2026-06-12-groundwork-and-the-persistence-boundary-in-elsa/featured.png"
 featuredImageAlt: "Generated technical illustration of an Elsa workflow engine separating runtime state from provider-neutral storage manifests and database providers"
-seoTitle: "Why Elsa Needed Groundwork"
+seoTitle: "Groundwork: Modular Persistence Without Relational Lock-In"
 seoDescription: "Groundwork gives Elsa module-friendly persistence without maintaining EF Core migrations for every module and provider, while keeping relational and document databases in scope."
 redirectFrom: []
 ---
 
-# Why Elsa Needed Groundwork
+# Groundwork: Modular Persistence Without Relational Lock-In
 
 I started Groundwork because Elsa's persistence story was becoming too expensive to maintain.
 
@@ -208,9 +208,9 @@ There is nothing especially glamorous here, which is part of the point.
 
 Module code should be able to save, load, update, and query its own durable documents without taking a dependency on EF Core migrations or MongoDB-specific setup. The provider package can still do serious provider work. It just does not leak that work into every module.
 
-## What this means for Elsa
+## What this could mean for Elsa
 
-For Elsa, Groundwork is mostly about reducing persistence maintenance while keeping provider choice real.
+For Elsa, the aim is mostly about reducing persistence maintenance while keeping provider choice real.
 
 It gives modules a way to declare storage without bringing migration files for every relational provider. It gives provider packages a common contract to materialize. It gives document databases a place in the architecture instead of treating them as a special case after the relational model has already won.
 

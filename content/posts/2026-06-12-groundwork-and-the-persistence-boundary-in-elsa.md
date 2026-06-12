@@ -1,9 +1,9 @@
 ---
-title: "Groundwork and the Persistence Boundary in Elsa"
+title: "Why Elsa Needed Groundwork"
 slug: "groundwork-and-the-persistence-boundary-in-elsa"
-description: "A look at why Elsa needs Groundwork: not as a generic document store, but as a clearer boundary between persistence intent, provider mechanics, extension data, and runtime state."
+description: "Groundwork came from a concrete Elsa maintenance problem: avoiding per-module EF Core migrations across providers, without giving up document databases such as MongoDB."
 publishedAt: "2026-06-12"
-updatedAt: null
+updatedAt: "2026-06-12"
 status: "published"
 authors:
   - "sipke"
@@ -16,52 +16,68 @@ tags:
   - "elsa-workflows"
 featuredImage: "../assets/2026-06-12-groundwork-and-the-persistence-boundary-in-elsa/featured.png"
 featuredImageAlt: "Generated technical illustration of an Elsa workflow engine separating runtime state from provider-neutral storage manifests and database providers"
-seoTitle: "Groundwork and the Persistence Boundary in Elsa"
-seoDescription: "Groundwork helps Elsa separate storage intent from provider mechanics, giving extensions and runtime data a clearer persistence contract without flattening every workload into one generic store."
+seoTitle: "Why Elsa Needed Groundwork"
+seoDescription: "Groundwork gives Elsa module-friendly persistence without maintaining EF Core migrations for every module and provider, while keeping relational and document databases in scope."
 redirectFrom: []
 ---
 
-# Groundwork and the Persistence Boundary in Elsa
+# Why Elsa Needed Groundwork
 
-Elsa's persistence problem is not simply that it supports multiple databases.
+I started Groundwork because Elsa's persistence story was becoming too expensive to maintain.
 
-That is the visible part. SQLite, SQL Server, PostgreSQL, MongoDB, and whatever comes next all have different opinions about schema, indexes, concurrency, queries, JSON, transactions, and migration history. Supporting those differences already takes work.
+Elsa is modular. Modules need durable state. In a typical .NET application, the obvious answer is EF Core, and for many applications that is exactly the right answer. You define entities, configure mappings, generate migrations, and move on.
 
-But the harder problem is that Elsa stores different kinds of things for different reasons.
+That model gets less pleasant when you are building a framework.
 
-A workflow runtime stores instance state, bookmarks, scheduler state, incidents, execution logs, outbox-like records, locks, leases, definitions, versions, and extension-owned data. Some of that data is part of the runtime hot path. Some of it is framework metadata. Some of it is business data that only exists because an application or module introduced it.
+If every Elsa module that needs persistence owns EF Core migrations, every storage change starts multiplying. A module needs a new table or index. That change needs to work for SQLite, SQL Server, PostgreSQL, and any other relational provider we support. The next module has its own migrations. The next provider has its own differences. Over time, a lot of the work is not really domain work anymore. It is migration maintenance.
 
-Treating all of that as "persistence" is too vague.
+And that is only the first half of the problem.
 
-Groundwork is useful to Elsa because it gives us a better question to ask before we choose a database provider:
+The second half is that I did not want Elsa's modular persistence story to become relational-only.
 
-What kind of storage contract does this workload need?
+Something like YesSQL is very close to what I wanted in one sense. It gives you document-like persistence on top of relational databases and avoids the "every module brings its own EF model and migration set" problem. That is a useful model.
 
-That is a smaller claim than "write once, run anywhere", and I think it is a more honest one.
+But Elsa should not force the host application into a relational database just because a module needs durable state. If an application is using MongoDB, that should not become a second-class deployment option.
 
-## Elsa needs vocabulary before provider code
+So the thing I wanted was roughly this:
 
-When a feature needs durable state, it is tempting to start at the provider layer.
+Module-friendly persistence, without per-module EF Core migrations, and without assuming every provider is relational.
 
-For an EF Core provider, that means entities, mappings, migrations, indexes, and query shapes. For MongoDB, it means collections, BSON shape, indexes, filters, and update operations. For a SQL provider that does not use EF, it means DDL, parameterized commands, transactions, and schema history.
+That is where Groundwork came from.
 
-That work is necessary, but it is not the first decision.
+## The missing layer
 
-The first decision is what the feature is asking persistence to guarantee.
+Groundwork is not an ORM in the usual sense. It is a small persistence foundation that lets a module describe its storage needs before a provider decides how to materialize them.
 
-Is the data mutable or append-only? Is the identity application-defined? Does it need optimistic concurrency? Which fields are queryable? Are those queries portable? Can the provider optimize the storage shape, or should the unit stay in a more generic document envelope? Is this runtime-defined business data, or is it part of the workflow engine's execution machinery?
+The key object is a `StorageManifest`.
 
-Groundwork puts those answers into a manifest.
+A manifest says: this module owns these storage units, this is their schema version, these capabilities are required, these fields are indexed, these queries are expected, and this is how physicalized the provider is allowed to make the storage.
 
-A `StorageManifest` declares storage units, workload classification, identity policy, tenancy policy, concurrency policy, serialization, indexes, portable queries, and physicalization preference. It does not say "create this exact SQL table with these exact provider types". It says, in effect: this is the durable shape the application needs, and these are the operations providers must respect.
+The support-ticket sample in the Groundwork repository is intentionally ordinary. It has tickets and comments. Tickets have a string identity, JSON content, optimistic concurrency, a unique ticket number, and queryable fields such as customer, status, assignee, and priority.
 
-The support-ticket sample in the Groundwork repository is intentionally ordinary, which makes it useful. It declares tickets and comments. Tickets have a string identity, JSON content, optimistic concurrency, a unique ticket number, and queryable fields such as customer, status, assignee, and priority.
+The top-level manifest is small:
 
-The manifest shape looks roughly like this:
+```csharp
+public static StorageManifest Create(PhysicalizationPolicy physicalization) =>
+    new(
+        new StorageManifestIdentity("support-tickets"),
+        new StorageManifestOwner("groundwork.sample.support"),
+        new StorageManifestVersion(SchemaVersion),
+        [
+            TicketUnit(physicalization),
+            CommentUnit(physicalization)
+        ],
+        new HashSet<string> { "schema-history", "optimistic-concurrency" },
+        []);
+```
+
+The module is not creating an EF Core migration here. It is not creating a MongoDB collection either. It is declaring intent.
+
+One storage unit looks like this:
 
 ```csharp
 new StorageUnit(
-    new StorageUnitIdentity("supportTicket"),
+    new StorageUnitIdentity(DocumentKind),
     "Support ticket",
     new WorkloadClassification(
         WorkloadFamily.RuntimeDefinedBusinessData,
@@ -73,118 +89,54 @@ new StorageUnit(
     SerializationPolicy.Json(),
     TicketIndexes(),
     TicketQueries(),
-    PhysicalizationPolicy.Portable);
+    physicalization);
 ```
 
-The important line here is not the storage-unit name.
+That is the level of abstraction I wanted for Elsa modules. Not "here is a SQL table", and not "here is a Mongo collection", but "here is the durable shape this module needs".
 
-It is the workload classification.
+## Indexes are part of the contract
 
-Elsa needs that kind of vocabulary. A workflow runtime has storage paths with very different operational expectations, and a modular workflow platform has extension data that should not require every extension author to become a provider author.
+The part that makes this work is that Groundwork is deliberately modest about queries.
 
-## Extension data is the obvious fit
+For portable document storage, a module declares indexes up front:
 
-The cleanest place for Groundwork in Elsa is not the most sensitive runtime path.
+```csharp
+private static IReadOnlyList<IndexDeclaration> TicketIndexes() =>
+[
+    Keyword(ByTicketNumber, "ticketNumber", isUnique: true),
+    Keyword(ByCustomer, "customerId"),
+    Keyword(ByStatus, "status"),
+    Keyword(ByAssignee, "assigneeId"),
+    Keyword(ByPriority, "priority")
+];
+```
 
-It is extension-owned, application-shaped data.
+Each index is a contract with the provider. In the sample, `Keyword` creates a one-field keyword index that supports equality:
 
-Elsa is deliberately extensible. Real systems add custom activities, modules, integrations, screens, metadata, records, and operational helpers around the workflow runtime. Some of that state belongs in the application's own database model. Some of it is small enough to keep inside the extension. Some of it needs to follow Elsa's provider choices because the extension is part of a reusable package.
+```csharp
+new IndexDeclaration(
+    identity,
+    [new IndexField(field)],
+    IndexValueKind.Keyword,
+    isUnique,
+    true,
+    MissingValueBehavior.Excluded,
+    new HashSet<PortableQueryOperation> { PortableQueryOperation.Equal });
+```
 
-Without a shared storage contract, extension persistence tends to drift toward one of two awkward choices.
+That narrowness is intentional.
 
-The extension can couple itself to a provider implementation, which makes it harder to reuse across installations. Or Elsa can keep adding one-off provider plumbing for every new durable shape, which spreads provider mechanics through the product.
+If a provider-neutral layer accepts arbitrary queries, it usually ends up lying. Either one provider supports a query well, another provider scans too much data, or the abstraction grows provider-specific escape hatches until the shared contract stops meaning anything.
 
-Groundwork gives a third option.
+Groundwork starts smaller. Equality queries over declared indexes are portable. Undeclared indexes fail clearly. Provider-specific optimization can still happen, but it happens behind the provider boundary.
 
-An extension can declare storage intent once: these units exist, these fields are indexed, these queries are portable, this concurrency model is required, and this workload is a Groundwork-default candidate. Then the SQLite, SQL Server, PostgreSQL, or MongoDB provider can materialize the appropriate storage shape.
+For Elsa, that is important. A module should not accidentally work on PostgreSQL and then become unusable on MongoDB because it smuggled in a relational assumption.
 
-That does not make all databases the same.
+## Providers materialize the same intent differently
 
-It gives the extension a contract that can be validated before runtime and implemented consistently by providers.
+Once a manifest exists, the provider owns the mechanics.
 
-For Elsa, that is a big deal. Provider choice is part of the product surface. Every time a module adds durable state, it should not silently narrow the set of providers that can run the application.
-
-## Declared indexes keep provider behavior honest
-
-Most persistence abstractions get into trouble when they pretend all providers can query the same way.
-
-Groundwork takes a narrower path. The current portable document-store contract supports equality queries over declared one-field indexes. That is intentionally modest.
-
-For relational providers, documents are stored as envelopes with declared index rows maintained transactionally alongside writes. SQLite, SQL Server, and PostgreSQL all materialize the same broad shape: document table, declared-index table, and schema-history table.
-
-For MongoDB, the provider creates one native collection per storage unit and native indexes for declared one-field indexes. Content is stored as BSON under a `content` field, while the document envelope keeps the provider-neutral shape.
-
-Same manifest. Different storage mechanics.
-
-There are limits, and the repository is honest about them:
-
-- equality queries only
-- one-field portable indexes
-- JSON stored as text in the relational providers
-- no Entity Framework dependency
-- no Elsa dependency
-- SQL Server indexed values constrained by key/index limits
-
-Those constraints are not a failure of abstraction. They are the abstraction.
-
-If Elsa exposes a provider-neutral persistence layer that accepts any query shape a provider happens to support, the shared contract stops meaning much. It becomes a polite wrapper around provider-specific behavior.
-
-Declared indexes force the contract into the open. If application code queries an undeclared index, providers are expected to fail clearly. That is exactly the sort of failure mode a framework should prefer. Better to reject the query than to let one provider handle it, another provider scan everything, and a third provider behave differently under load.
-
-## Physicalization is a provider decision, not an application leak
-
-The physicalization work is one of the more interesting parts of Groundwork.
-
-With `PhysicalizationPolicy.Portable`, relational providers query through the declared index table. With `PhysicalizationPolicy.Optimized`, eligible indexes can be projected into provider-native storage.
-
-In SQLite, that can mean projection tables for optimized units. In MongoDB, it can mean storing physicalized fields on the document and indexing those fields natively. The eligibility rule is deliberately narrow: a single field, missing values excluded, equality supported.
-
-That sounds conservative, but it preserves an important property for Elsa:
-
-The module declares intent once.
-
-The provider decides the concrete shape.
-
-The module does not need to know whether SQLite uses projection tables, MongoDB uses native fields, or SQL Server has key-length constraints that affect indexed values. Those details belong in provider packages.
-
-This is where Groundwork starts to feel less like a document-store wrapper and more like a planning layer. It can validate a manifest, check provider capabilities, plan document or relational shapes, materialize storage, record schema history, and then give application code an `IDocumentStore` with save, load, query, and delete operations.
-
-That is not a replacement for every store in Elsa.
-
-It is a way to stop provider mechanics from leaking into places where the application only needed to declare durable intent.
-
-## The runtime lesson is knowing where not to use it
-
-The most useful part of the Groundwork evaluation work may be that it does not try to move everything at once.
-
-Runtime-defined business data is marked as a good fit.
-
-Workflow checkpoint state, bookmark state, and durable scheduler continuation state are benchmark-gated. They need evidence around p95 and p99 latency, concurrent resume behavior, retry behavior, idempotency, diagnostics, and recovery behavior before they should move onto this foundation.
-
-Other workloads are treated as specialized by default:
-
-- execution mailboxes and agent ownership
-- post-commit intents and outbox records
-- execution logs and audit streams
-- distributed locks and leases
-
-That distinction matters in Elsa.
-
-A workflow runtime is not just a place where documents are saved. Some persistence paths carry ordering guarantees, lease ownership, retry semantics, retention behavior, stream-like reads, and operational expectations that are easy to flatten if you only look at the shape of the data.
-
-Groundwork is useful partly because it gives us a vocabulary for not flattening those things.
-
-Some data can be provider-neutral document storage. Some data can be provider-neutral with optimized physicalization. Some data needs a specialized provider contract. And some data should not move until benchmarks prove the runtime behavior is acceptable.
-
-That is a healthier conversation than "can we store it in the generic persistence layer?"
-
-The better question is: what guarantees does this workload need?
-
-## What Elsa code gets from the boundary
-
-The support-ticket sample shows the programming model in a small form.
-
-Application code creates a manifest, materializes it for the selected provider, and then uses the document-store contract:
+In the support-ticket sample, startup creates the manifest and then chooses a provider:
 
 ```csharp
 var manifest = SupportTicketManifest.Create(options.EffectivePhysicalization);
@@ -195,54 +147,83 @@ await new SqliteGroundworkMaterializer(connection)
 IDocumentStore store = new SqliteDocumentStore(connection, manifest);
 ```
 
-The same sample can use PostgreSQL, SQL Server, or MongoDB by swapping the materializer and store implementation. The repository tests the support-ticket API contract against provider-neutral behavior, including optimistic concurrency, duplicate ticket handling, declared index queries, comments, and optimized physicalization.
-
-The write API stays small:
+The same sample can swap the provider:
 
 ```csharp
-var saved = await store.SaveAsync(new SaveDocumentRequest(
-    "supportTicket",
-    ticket.TicketNumber,
-    "1.0.0",
-    JsonSerializer.Serialize(ticket, json)));
+await new MongoDbGroundworkMaterializer(database)
+    .MaterializeAsync(manifest, Provider("groundwork-mongodb"), cancellationToken);
 
-var openTickets = await store.QueryAsync(
-    new DocumentStoreQuery("supportTicket", "by-status", "open", skip: 0, take: 25));
-
-var updated = await store.SaveAsync(new SaveDocumentRequest(
-    "supportTicket",
-    ticket.TicketNumber,
-    "1.0.0",
-    JsonSerializer.Serialize(ticket, json),
-    ExpectedVersion: saved.Document!.Version));
+IDocumentStore store = new MongoDbDocumentStore(database, manifest);
 ```
 
-The expected version is not decorative. Providers use it for optimistic concurrency, and stale writes return a concurrency conflict instead of silently overwriting the current document.
+That is the distinction Groundwork is trying to preserve.
 
-For Elsa, primitives like that are useful because they are boring in the right way. They let extension and module code express normal durable data needs without taking a dependency on the provider's internal model.
+The module declares one manifest. SQLite, SQL Server, PostgreSQL, and MongoDB do not have to use the same physical structure. Relational providers can use document envelopes, declared index rows, schema history, and projection tables where appropriate. MongoDB can use native collections and native indexes.
 
-## The boundary is the point
+Same intent. Different mechanics.
 
-Groundwork is a standalone Valence Works library, and that independence matters.
+This is why the YesSQL comparison is useful but not quite enough. YesSQL-style persistence solves a real modularity problem, but it assumes the relational world. Groundwork keeps the module-facing model similar in spirit while letting a document database be a real provider, not an afterthought.
 
-It started from persistence foundation work around Elsa, but the `Groundwork.*` packages do not reference Elsa packages. The repository has tests that enforce that boundary. Generic storage concepts are not named after Elsa domains.
+## The application code stays boring
 
-That is not just tidiness.
+The document-store API is intentionally small.
 
-If Groundwork is going to help Elsa, it cannot become "Elsa persistence internals with a different package name". It needs to stay generic enough for other .NET applications, while still being shaped by the real pressure of a workflow engine that has to run across providers.
+Saving a support ticket looks like this in the sample repository:
 
-The payoff for Elsa is a clearer persistence architecture:
+```csharp
+await store.SaveAsync(
+    new SaveDocumentRequest(
+        SupportTicketManifest.DocumentKind,
+        ticket.TicketNumber,
+        SupportTicketManifest.SchemaVersion,
+        Serialize(ticket)),
+    cancellationToken);
+```
 
-- extension-owned business data can have a provider-neutral manifest
-- provider packages can own materialization mechanics
-- runtime hot paths can stay specialized when their guarantees require it
-- benchmark-gated workloads can be evaluated with the right evidence
-- unsupported portable queries can fail clearly instead of drifting by provider
+Querying uses a declared index:
 
-That last point is easy to underestimate. A framework does not only need abstractions that make things possible. It needs boundaries that make the wrong thing harder to do accidentally.
+```csharp
+var envelopes = await store.QueryAsync(
+    new DocumentStoreQuery(
+        SupportTicketManifest.DocumentKind,
+        SupportTicketManifest.ByStatus,
+        "open"),
+    cancellationToken);
+```
 
-Groundwork gives Elsa one of those boundaries.
+Updating can use optimistic concurrency:
 
-Not for every persistence problem.
+```csharp
+await store.SaveAsync(
+    new SaveDocumentRequest(
+        SupportTicketManifest.DocumentKind,
+        ticket.TicketNumber,
+        SupportTicketManifest.SchemaVersion,
+        Serialize(ticket),
+        expectedVersion),
+    cancellationToken);
+```
 
-But for the growing class of module, extension, and application-defined storage that needs to follow Elsa across providers, it gives us a better starting point than another pile of provider-specific code.
+There is nothing especially glamorous here, which is part of the point.
+
+Module code should be able to save, load, update, and query its own durable documents without taking a dependency on EF Core migrations or MongoDB-specific setup. The provider package can still do serious provider work. It just does not leak that work into every module.
+
+## What this means for Elsa
+
+For Elsa, Groundwork is mostly about reducing persistence maintenance while keeping provider choice real.
+
+It gives modules a way to declare storage without bringing migration files for every relational provider. It gives provider packages a common contract to materialize. It gives document databases a place in the architecture instead of treating them as a special case after the relational model has already won.
+
+That does not mean every Elsa store should move to Groundwork.
+
+The workflow runtime has hot paths and correctness-sensitive paths: checkpoints, bookmarks, scheduler continuation state, execution mailboxes, outbox records, logs, locks, and leases. Those areas have stronger requirements around latency, ordering, recovery, idempotency, retention, and concurrency. Some may become Groundwork candidates later, but only with evidence.
+
+Groundwork is a better default for a different class of data: module-owned, application-shaped, runtime-defined business data where the framework knows the storage contract before the host application chooses the provider.
+
+That boundary matters.
+
+The useful thing is not that Groundwork hides all database differences. It does not, and it should not pretend to.
+
+The useful thing is that an Elsa module can describe durable intent once, and the selected provider can decide how to make that intent real.
+
+That is the layer I wanted.

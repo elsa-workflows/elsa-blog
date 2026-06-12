@@ -4,7 +4,7 @@ slug: "groundwork-and-the-persistence-boundary-in-elsa"
 description: "A look at why Elsa needs Groundwork: not as a generic document store, but as a clearer boundary between persistence intent, provider mechanics, extension data, and runtime state."
 publishedAt: "2026-06-12"
 updatedAt: null
-status: "draft"
+status: "published"
 authors:
   - "sipke"
 category: "Engineering"

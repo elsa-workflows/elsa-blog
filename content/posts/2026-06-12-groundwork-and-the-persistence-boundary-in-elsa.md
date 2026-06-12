@@ -214,11 +214,13 @@ For Elsa, the aim is mostly about reducing persistence maintenance while keeping
 
 It gives modules a way to declare storage without bringing migration files for every relational provider. It gives provider packages a common contract to materialize. It gives document databases a place in the architecture instead of treating them as a special case after the relational model has already won.
 
-That does not mean every Elsa store should move to Groundwork.
+That does not mean every Elsa store should be forced through the same generic document-store shape.
 
-The workflow runtime has hot paths and correctness-sensitive paths: checkpoints, bookmarks, scheduler continuation state, execution mailboxes, outbox records, logs, locks, and leases. Those areas have stronger requirements around latency, ordering, recovery, idempotency, retention, and concurrency. Some may become Groundwork candidates later, but only with evidence.
+This is an important distinction. Groundwork can be the provider-neutral foundation underneath Elsa persistence while still exposing more specialized contracts for runtime workloads.
 
-Groundwork is a better default for a different class of data: module-owned, application-shaped, runtime-defined business data where the framework knows the storage contract before the host application chooses the provider.
+Bookmarks, workflow instances, scheduler state, execution mailboxes, outbox records, logs, locks, and leases all have different requirements. Some need resume-oriented indexes. Some need append and retention behavior. Some need claiming, ordering, retry, expiry, or compare-and-set semantics.
+
+Those workloads should not sit outside Groundwork just because they are more specialized. They probably need Groundwork-backed contracts that describe their real behavior instead of flattening everything into ordinary document storage.
 
 That boundary matters.
 

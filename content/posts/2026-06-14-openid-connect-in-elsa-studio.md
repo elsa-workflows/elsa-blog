@@ -119,6 +119,7 @@ builder.Services.AddOpenIdConnectAuth(options =>
     options.AuthenticationScopes = ["openid", "profile", "offline_access"];
     options.BackendApiScopes = ["api://your-api-id/elsa-server-api"];
     options.ResponseType = "code";
+    // PKCE is applied by Microsoft.AspNetCore.Components.WebAssembly.Authentication.
 });
 ```
 

@@ -1,9 +1,9 @@
 ---
-title: "Structured Logs in Elsa 3.8"
+title: "Structured Logs in Elsa 3.8: Operator Guide"
 slug: "structured-logs-in-elsa-3-8"
-description: "A closer look at Elsa 3.8 structured logs: semantic ILogger capture, workflow correlation, source metadata, redaction, live streaming, and SQLite persistence."
+description: "Elsa 3.8 structured logs capture semantic ILogger events with workflow context, source metadata, redaction, live streaming, and SQLite persistence."
 publishedAt: "2026-06-02"
-updatedAt: null
+updatedAt: "2026-06-30"
 status: "published"
 authors:
   - "sipke"
@@ -15,105 +15,94 @@ tags:
   - "logging"
 featuredImage: "../assets/2026-06-02-structured-logs-in-elsa-3-8/featured.png"
 featuredImageAlt: "Generated technical illustration of semantic log events flowing from a workflow service into a diagnostics workspace"
-seoTitle: "Structured Logs in Elsa 3.8"
-seoDescription: "Elsa 3.8 adds structured log diagnostics for semantic ILogger events, workflow correlation, source metadata, redaction, live streaming, and SQLite persistence."
+seoTitle: "Structured Logs in Elsa 3.8: Operator Guide"
+seoDescription: "Elsa 3.8 structured logs capture semantic ILogger events with workflow context, source metadata, redaction, live streaming, and SQLite persistence."
 redirectFrom: []
 ---
 
-# Structured Logs in Elsa 3.8
+# Structured Logs in Elsa 3.8: Operator Guide
 
-One of the easiest ways to make a workflow system hard to operate is to treat all runtime output as text.
+Elsa 3.8 preview 1 adds `Elsa.Diagnostics.StructuredLogs`, an opt-in diagnostics module for semantic `ILogger` events. The module sits beside console logs and OpenTelemetry diagnostics; it does not replace either one ([Elsa 3.8 Preview 1](/blog/elsa-3-8-preview-1), 2026).
 
-Text is useful. Sometimes it is the fastest way to understand what just happened. But an `ILogger` event is not just a line of text. It has a level, category, message template, rendered message, properties, scopes, exception details, and often trace or workflow context around it.
+The distinction matters. Microsoft describes `ILogger` as a structured logging API for monitoring application behavior and diagnosing problems ([Microsoft Learn](https://learn.microsoft.com/en-us/dotnet/core/extensions/logging/overview), retrieved 2026-06-30). Elsa's structured log module keeps that structure available inside Studio, instead of reducing every event to a string.
 
-That structure is the useful part.
+> **Key Takeaways**
+> - Elsa 3.8 structured logs capture semantic `ILogger` records, including workflow context and trace/span values.
+> - Core exposes three read surfaces: recent logs, sources, and storage diagnostics, plus a SignalR live stream.
+> - The default store is bounded and in memory; SQLite persistence is available when recent diagnostics need to survive process restarts.
 
-Elsa 3.8 preview 1 adds `Elsa.Diagnostics.StructuredLogs`, an opt-in diagnostics module for capturing semantic `ILogger` records from an Elsa host and surfacing them in Studio.
+In our experience, this is the difference between "something failed" and "this workflow instance logged this event on this source with this trace ID." Operators need the second sentence.
 
-This is separate from console log streaming. Console logs answer "what did this process write to stdout or stderr?" Structured logs answer "what did the application report as a typed diagnostic event, and what context came with it?"
+## What is a structured log in Elsa?
 
-Those are related questions, but they are not the same question.
+A **structured log** is an application log event with fields that can be filtered, correlated, and rendered later. In Elsa 3.8, those fields include level, category, message template, rendered message, properties, scopes, exception details, tenant, workflow identifiers, trace ID, span ID, and source metadata.
 
-## The shape of a structured log
+That list is long because workflow incidents are rarely solved by one field. A timeout might need the workflow instance ID, the activity that ran, the exception message, the container that produced it, and the trace that connects it to other telemetry.
 
-The structured logs module registers an `ILoggerProvider` that captures application log events and passes them through a small pipeline:
+The module pipeline is intentionally simple:
 
 ```text
 ILogger event
   -> structured log provider
   -> redaction
   -> queryable store
-  -> live feed
-  -> REST and SignalR
+  -> recent API and live stream
   -> Elsa Studio
 ```
 
-The records include the things operators usually need when they are trying to narrow a problem down:
+The source code backs up the operator-facing shape. The Core recent endpoint accepts both `GET` and `POST` on `/diagnostics/structured-logs/recent` and requires the structured logs read permission. Studio maps filters into recent queries and live subscriptions, including source, trace ID, and span ID filters.
 
-- level and category
-- message template and rendered message
-- properties and scopes
-- exception details
-- trace ID and span ID
-- tenant and correlation values
-- workflow definition and workflow instance context where available
-- source metadata such as machine, process, pod, namespace, container, and node
+## How does Studio make the logs useful?
 
-That last part is easy to underestimate.
-
-In local development, "the server" often means one process in one terminal. In production, it might mean several containers across nodes. If a log viewer flattens that into one anonymous stream, it removes information that is often needed during an incident.
-
-Elsa tracks source metadata so Studio can show where an event came from.
-
-## Reading logs from Studio
-
-Studio adds the viewer at:
-
-```text
-/diagnostics/structured-logs
-```
+Studio adds one dedicated structured logs page at `/diagnostics/structured-logs`. It loads a recent backfill, subscribes to live updates over SignalR, and lets the operator filter by level, category, message, tenant, workflow instance, source, trace ID, and span ID.
 
 ![Elsa Studio structured logs viewer with filters, live connection state, and recent log rows](../assets/2026-06-01-elsa-3-8-preview-1/structured-log-viewer.png)
 
-The page loads a recent backfill and then subscribes to live events over SignalR. From there, you can filter by level, category, message, tenant, workflow instance, source, trace ID, and span ID.
-
-Workflow instance screens can deep-link into the structured logs page with the workflow instance filter already applied:
+The route is designed for deep links. A workflow instance view can open:
 
 ```text
 /diagnostics/structured-logs?workflowInstanceId={workflowInstanceId}
 ```
 
-Trace-focused links can do the same with trace and span values:
+Trace-oriented diagnostics can use:
 
 ```text
 /diagnostics/structured-logs?traceId={traceId}&spanId={spanId}
 ```
 
-The page is not trying to be a full logging platform. It is trying to make the recent operational state of an Elsa host visible from the same UI where you inspect workflows.
+That matters during support work. You should not need to remember the exact filter syntax or copy IDs across screens when you are already looking at the workflow instance that failed.
 
-That is a narrower goal, and I think it is the right one for this feature.
+Studio also reads storage diagnostics from `/diagnostics/structured-logs/storage`. That is a small feature with a large operational meaning: if storage is under pressure, the UI can show that pressure instead of making the log stream look complete when it is not.
 
-## Bounded by default
+## Why does source metadata matter?
 
-The default store is in memory. It keeps a bounded recent buffer and exposes recent records through REST:
+Source metadata lets Elsa distinguish where an event came from. The structured logs tests cover Kubernetes-style metadata such as `HOSTNAME`, `OTEL_SERVICE_NAME`, `POD_NAMESPACE`, `CONTAINER_NAME`, and `NODE_NAME`, and the registry carries those values into the source model.
+
+In a single local process, source metadata can feel unnecessary. In a clustered host, it is often the first thing you need. Was the event emitted by pod `elsa-pod-7` or a different replica? Did only one container start dropping writes? Is one node producing stale sources while the others look healthy?
+
+Without source data, those questions become guesswork. With source data, Studio can group and filter events by the runtime that produced them.
+
+This is also why the module tracks source heartbeat state. A source that has not been seen recently should not look the same as a live source. Staleness is operational information.
+
+## What is stored by default?
+
+By default, structured logs use a bounded in-memory recent store. Core exposes three route fragments under the configured Elsa API prefix:
 
 ```text
-POST /elsa/api/diagnostics/structured-logs/recent
-GET  /elsa/api/diagnostics/structured-logs/sources
-GET  /elsa/api/diagnostics/structured-logs/storage
+GET|POST /diagnostics/structured-logs/recent
+GET      /diagnostics/structured-logs/sources
+GET      /diagnostics/structured-logs/storage
 ```
 
-Live updates are exposed through the hub:
+Live events use the SignalR hub:
 
 ```text
 /elsa/hubs/diagnostics/structured-logs
 ```
 
-That makes the feature easy to turn on for development, support sessions, and focused troubleshooting. It also means the default history is process-local. If the process restarts, the in-memory history is gone. If you run several nodes, each node has its own source and buffer.
+That default is good for development, short support sessions, and focused troubleshooting. It is also intentionally limited. If the process restarts, in-memory history is gone. If you run multiple nodes, each node has its own source and buffer.
 
-That is a tradeoff, not an accident.
-
-For many environments, recent in-process diagnostics are enough. For durable storage, Elsa 3.8 also includes SQLite structured log persistence through `Elsa.Diagnostics.StructuredLogs.Persistence.Sqlite`.
+For durable recent diagnostics, Elsa 3.8 preview 1 includes SQLite persistence through `Elsa.Diagnostics.StructuredLogs.Persistence.Sqlite`:
 
 ```csharp
 services.AddElsa(elsa =>
@@ -130,23 +119,19 @@ services.AddElsa(elsa =>
 });
 ```
 
-The persistence boundary is deliberately split. The core structured logs package knows about capture, redaction, stores, live feeds, and contracts. The relational package supplies shared relational behavior. The SQLite package supplies the provider-specific connection factory, dialect, and migrations.
+The storage boundary is deliberately split. The core package owns capture, redaction, recent queries, source tracking, live delivery, and contracts. The persistence packages own provider-specific storage.
 
-That keeps the door open for other storage providers without making the core diagnostics package depend on one database.
+## Where does redaction happen?
 
-## Redaction belongs before delivery
+Redaction happens before logs are buffered, persisted, streamed, or returned from endpoints. The module passes events through `IStructuredLogRedactor`, and `StructuredLogsOptions` lets hosts extend sensitive property names and text patterns.
 
-Structured logs can carry sensitive values if application code puts sensitive values into properties, scopes, exception messages, or rendered text.
+That does not make careless logging safe. If application code writes a credential into a message or exception, the safest fix is still to stop logging the credential. Redaction is a defensive layer inside the diagnostics module, not a license to treat logs as harmless.
 
-The module passes events through `IStructuredLogRedactor` before buffering or streaming. `StructuredLogsOptions` lets hosts extend the sensitive property names and text patterns that should be masked.
+The practical rule is simple: use structured properties for useful diagnostic fields, and keep secret values out of log messages. For credential references, use the Elsa secrets model instead of copying values into workflow inputs or log scopes ([Secret References in Elsa 3.8](/blog/secret-references-in-elsa-3-8), 2026).
 
-This does not make careless logging safe.
+## How do you enable structured logs?
 
-It does give the diagnostics module a clear safety boundary: values should be redacted before they enter recent storage, live delivery, or endpoint responses. That is the right place for this feature to do its part.
-
-## Enabling the module
-
-At the host level, the shape is intentionally small:
+Structured logs are opt-in. A minimal host enables the module in Elsa and maps the middleware or endpoint integration:
 
 ```csharp
 services.AddElsa(elsa =>
@@ -162,24 +147,14 @@ services.AddElsa(elsa =>
 app.UseStructuredLogs();
 ```
 
-The endpoints require the structured log diagnostics read permission:
+The read surface is permissioned with the structured logs diagnostics read permission. Studio also handles unavailable and unauthorized states, so a missing backend feature or missing permission does not appear as an empty log page.
 
-```text
-read:diagnostics:structured-logs
-```
+That is important for operational data. Logs can contain sensitive business context even after redaction, so "can open Studio" should not automatically mean "can read every runtime log."
 
-Studio hides the navigation item when the remote feature or permission is unavailable, and the direct route has unavailable and unauthorized states. That matters for diagnostics features, because "the page exists" should not be the same thing as "everyone can read runtime logs".
+## When should you use structured logs instead of console logs?
 
-## Why not just use console logs?
+Use structured logs when the question depends on fields: workflow instance, tenant, category, scope, exception data, source, trace ID, or span ID. Use console logs when the question is about raw stdout or stderr output ([Console Logs in Elsa 3.8](/blog/console-logs-in-elsa-3-8), 2026).
 
-Because the two surfaces lose value when they are forced into one model.
+The two surfaces overlap during debugging, but they should not be merged. Console logs preserve what the process printed. Structured logs preserve what the application reported. OpenTelemetry diagnostics preserve telemetry signals such as resources, traces, metrics, and OTLP logs ([OpenTelemetry Diagnostics in Elsa 3.8](/blog/opentelemetry-diagnostics-in-elsa-3-8), 2026).
 
-Console logs are raw process output. They are useful when an external tool writes to stdout, when a developer uses `Console.WriteLine`, or when ANSI output already carries the shape you want to inspect.
-
-Structured logs are application events. They are useful when you need fields, categories, scopes, exception data, source metadata, workflow context, and correlation.
-
-The UI should let each surface be itself.
-
-Structured logs in Elsa 3.8 are a step toward making workflow hosts easier to operate without pretending Elsa Studio is your whole observability stack. You will still want proper centralized logging in serious production environments.
-
-But when you are inside Studio, looking at a workflow instance, and need to answer "what did the backend say about this?", having the semantic log stream one click away is a very practical improvement.
+Elsa Studio is not trying to become your central logging platform. For production retention, alerting, search, and long-term analysis, keep using your normal observability stack. The value here is more immediate: when you are already in Studio looking at a workflow, the semantic backend log stream is now close enough to use.

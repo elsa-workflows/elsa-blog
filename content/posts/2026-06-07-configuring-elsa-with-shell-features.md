@@ -1,9 +1,9 @@
 ---
-title: "Configuring Elsa with Shell Features"
+title: "Configuring Elsa with Shell Features: Modular Hosts"
 slug: "configuring-elsa-with-shell-features"
-description: "A practical look at Elsa shell features and why they start to matter once your host stops being one fixed setup."
+description: "Elsa shell features move host composition into module descriptors and configuration, helping modular and multi-tenant workflow hosts stay understandable."
 publishedAt: "2026-06-07"
-updatedAt: null
+updatedAt: "2026-06-30"
 status: "published"
 authors:
   - "sipke"
@@ -15,57 +15,37 @@ tags:
   - "modularity"
 featuredImage: "../assets/2026-06-07-configuring-elsa-with-shell-features/featured.png"
 featuredImageAlt: "Editorial illustration of a modular workflow host assembled from composable blocks around a central workflow graph"
-seoTitle: "Configuring Elsa with Shell Features"
-seoDescription: "A practical look at Elsa shell features, appsettings-based configuration, and why they matter once host composition gets more complicated."
+seoTitle: "Configuring Elsa with Shell Features: Modular Hosts"
+seoDescription: "Elsa shell features move host composition into module descriptors and configuration, helping modular and multi-tenant workflow hosts stay understandable."
 redirectFrom: []
 ---
 
-# Configuring Elsa with Shell Features
+# Configuring Elsa with Shell Features: Modular Hosts
 
-A workflow host gets awkward once `Program.cs` stops being a startup file and starts becoming a policy document.
+Elsa shell features are module-level building blocks that can describe dependencies, settings, metadata, and infrastructure expectations. In Elsa 3.8, that model matters because host composition is moving beyond one fixed `Program.cs` file ([PR #7278](https://github.com/elsa-workflows/elsa-core/pull/7278), 2026).
 
-At first that is fine. A couple of feature registrations are easy to read. Then you need a second persistence option. Then a different authentication setup. Then tenant-specific routing. Then a scheduler. Then one package that only makes sense in one environment and another package that should absolutely not light up everywhere.
+At small scale, explicit startup code is fine. At platform scale, `Program.cs` can turn into a policy document: persistence, auth, routing, dashboard modules, diagnostics, package loading, tenant setup, and environment differences all compete for the same file.
 
-Nothing is terribly wrong yet, but the composition story starts to feel heavier than it should.
+> **Key Takeaways**
+> - Shell features let Elsa modules describe what they provide, depend on, and configure.
+> - The modular server sample wires shells once, then lets `CShells:Shells` choose feature sets and settings per shell.
+> - This is most useful for modular hosts, multi-tenant systems, internal platforms, and package-driven servers.
 
-That is the part of Elsa's shell feature work I think is worth paying attention to.
+In our experience, this is the point where configuration stops being "JSON instead of code" and becomes a composition boundary.
 
-The simple version is that feature selection and a fair bit of feature configuration no longer have to live entirely in startup code. Features can increasingly describe themselves as shell-scoped building blocks that a host can enable and configure from configuration.
+## What problem do shell features solve?
 
-This is not something every Elsa application needs. If you have one host, one persistence strategy, and no real modularity concerns, explicit code is still a very good answer.
+A **shell feature** is a named module contribution that can be enabled for a shell. It can carry dependencies, options, categories, and infrastructure hints, so the host does not need to manually understand every low-level registration detail.
 
-But once the host stops being one fixed setup, the tradeoff changes.
+That becomes useful when a workflow host is no longer one setup. One shell might use SQLite for a local server. Another might use SQL Server for a tenant. A package might contribute dashboard modules. A platform server might load extensions from NuGet-style packages through [NuPlane](/blog/introducing-nuplane-nuget-packages-as-a-runtime-primitive).
 
-## Where this becomes useful
+This relates closely to the broader CShells model. CShells gives a .NET host named shells, web routing, and per-shell feature composition. Elsa shell features plug Elsa-specific modules into that shape ([Building Modular .NET Applications with CShells](/blog/building-modular-dotnet-applications-with-cshells), 2025; [Building Multitenant Web Apps in .NET with CShells](/blog/building-multitenant-web-apps-in-dotnet-with-cshells), 2026).
 
-The important bit is not "you can put things in JSON now".
+## What does the modular server wire up?
 
-The more useful change is that a feature can carry more of its own shape:
+The current `Elsa.ModularServer.Web` sample wires shell infrastructure once. It adds host assemblies, a NuPlane assembly provider, configuration, path routing, authentication/authorization, and a common Elsa feature baseline ([Program.cs](https://github.com/elsa-workflows/elsa-core/blob/release/3.8.0/src/apps/Elsa.ModularServer.Web/Program.cs), 2026).
 
-- what it is,
-- what it depends on,
-- which settings it exposes,
-- and, more recently, some metadata about the kind of infrastructure it expects.
-
-That gives the host a better chance of composing Elsa without hard-coding every decision in one place.
-
-The big move here was [PR #7278 in `elsa-core`](https://github.com/elsa-workflows/elsa-core/pull/7278), which added shell features across a large set of modules and introduced the modular server sample host.
-
-Then there was some quieter follow-up work on June 6 and June 7:
-
-- [Add `PackageManifestHints.cs` to solution and compile include in build props](https://github.com/elsa-workflows/elsa-core/commit/2f668738113f3518dab2b565fcbe0b16420f010b)
-- [Add platform manifest runtime kind hints](https://github.com/elsa-workflows/elsa-extensions/commit/d407e9621770a55427ac6c2315bd779da08d5fea)
-- [Add shell feature manifest categories](https://github.com/elsa-workflows/elsa-core/commit/4c104635ac64f082bb468ed44e51f7f6d5f4e45f)
-
-I would not pitch those June commits as some big end-user feature. They are more interesting as a signal of where this is going. Elsa packages are getting better at describing what they are, what runtime they belong to, and what sort of infrastructure they assume.
-
-The thing you can use today is the shell feature model itself.
-
-## What this looks like in code
-
-The cleanest example right now is [`Elsa.ModularServer.Web`](https://github.com/elsa-workflows/elsa-core/blob/release/3.8.0/src/apps/Elsa.ModularServer.Web/Program.cs).
-
-The host sets up shells once, points them at configuration, and applies a feature set:
+The shape is intentionally different from a single global Elsa runtime:
 
 ```csharp
 builder.AddShells(shells => shells
@@ -82,6 +62,7 @@ builder.AddShells(shells => shells
             typeof(WorkflowRuntimeFeature),
             typeof(WorkflowsFeature),
             typeof(DistributedRuntimeFeature),
+            typeof(ElsaPlatformIntegrationFeature),
             typeof(DashboardApiFeature),
             typeof(WorkflowRuntimeDashboardFeature),
             typeof(ConsoleLogsDashboardFeature),
@@ -90,15 +71,21 @@ builder.AddShells(shells => shells
     }));
 ```
 
-That is already a different mental model from "wire one global Elsa runtime in startup and call it a day".
+That code sets the host-wide shell environment. The per-shell feature list and feature settings then come from configuration.
 
-Then look at [`appsettings.Example.json`](https://github.com/elsa-workflows/elsa-core/blob/release/3.8.0/src/apps/Elsa.ModularServer.Web/appsettings.Example.json).
+## What does configuration look like?
 
-One shell can light up a small workflow server backed by SQLite:
+The sample `appsettings.Example.json` uses `CShells:Shells` as an array of shell objects. The default shell enables a small workflow server with SQLite persistence ([appsettings.Example.json](https://github.com/elsa-workflows/elsa-core/blob/release/3.8.0/src/apps/Elsa.ModularServer.Web/appsettings.Example.json), 2026):
 
 ```json
 {
   "Name": "Default",
+  "Description": "Uses unified persistence configuration - all persistence features share the same settings",
+  "Properties": {
+    "WebRouting": {
+      "Path": ""
+    }
+  },
   "Settings": {
     "FastEndpoints": {
       "GlobalRoutePrefix": "elsa/api"
@@ -117,7 +104,7 @@ One shell can light up a small workflow server backed by SQLite:
 }
 ```
 
-Another shell can use SQL Server and override only part of the persistence setup:
+A second shell can route under `tenant1`, use a different API prefix, and select SQL Server persistence:
 
 ```json
 {
@@ -146,19 +133,15 @@ Another shell can use SQL Server and override only part of the persistence setup
 }
 ```
 
-That sounds simple, but it changes where the composition logic lives.
+The interesting part is not the JSON syntax. It is that the host can apply different composition choices per shell without turning startup into a long chain of `if tenant then register this` logic.
 
-You can push more environment-specific or tenant-specific setup into configuration without turning the host into a long chain of conditional registrations. That is a very different operating model for teams building internal platforms, white-label systems, or multi-tenant workflow hosts.
+## What do feature classes describe?
 
-## The feature classes carry more of the burden
-
-The shell feature types are doing more than just calling into DI.
-
-Take [`HttpFeature`](https://github.com/elsa-workflows/elsa-core/blob/release/3.8.0/src/modules/Elsa.Http/ShellFeatures/HttpFeature.cs). It declares metadata, dependencies, and configuration-bound options:
+Feature classes now carry more of the module contract. `HttpFeature`, for example, declares two manifest categories, display metadata, dependencies on `HttpJavaScriptFeature` and `ResilienceFeature`, and HTTP-specific options ([HttpFeature.cs](https://github.com/elsa-workflows/elsa-core/blob/release/3.8.0/src/modules/Elsa.Http/ShellFeatures/HttpFeature.cs), 2026).
 
 ```csharp
-[ManifestFeatureCategory(ManifestFeatureCategories.HTTP)]
-[ManifestFeatureCategory(ManifestFeatureCategories.Workflows)]
+[ManifestFeatureCategory("HTTP")]
+[ManifestFeatureCategory("Workflows")]
 [ShellFeature(
     DisplayName = "HTTP",
     Description = "Provides HTTP-related activities and services for workflow execution",
@@ -169,59 +152,45 @@ public class HttpFeature : IMiddlewareShellFeature
 }
 ```
 
-Or take [`SqliteWorkflowPersistenceShellFeature`](https://github.com/elsa-workflows/elsa-core/blob/release/3.8.0/src/modules/Elsa.Persistence.EFCore.Sqlite/ShellFeatures/SqliteWorkflowPersistenceShellFeature.cs), which wraps a few persistence concerns into one combined feature:
+The SQLite workflow persistence feature shows a different kind of value. It combines definition, instance, and runtime persistence into one feature and declares that it needs SQLite-style infrastructure ([SqliteWorkflowPersistenceShellFeature.cs](https://github.com/elsa-workflows/elsa-core/blob/release/3.8.0/src/modules/Elsa.Persistence.EFCore.Sqlite/ShellFeatures/SqliteWorkflowPersistenceShellFeature.cs), 2026).
 
 ```csharp
+[ManifestFeatureCategory("Persistence")]
+[ManifestFeatureCategory("Workflows")]
 [ShellFeature(
     DisplayName = "Sqlite Workflow Persistence",
     Description = "Provides Sqlite persistence for workflow definitions, instances, and runtime data with unified configuration",
-    DependsOn = [typeof(SqliteWorkflowDefinitionPersistenceShellFeature), typeof(SqliteWorkflowInstancePersistenceShellFeature), typeof(SqliteWorkflowRuntimePersistenceShellFeature)])]
-[ManifestInfrastructure("sqlite-database", "database", Reason = "Stores workflow definitions, instances, and runtime data in SQLite.", Providers = new[] { "SQLite" }, ConfigurationKeys = new[] { "ConnectionString" })]
+    DependsOn = [
+        typeof(SqliteWorkflowDefinitionPersistenceShellFeature),
+        typeof(SqliteWorkflowInstancePersistenceShellFeature),
+        typeof(SqliteWorkflowRuntimePersistenceShellFeature)])]
+[ManifestInfrastructure("sqlite-database", "database",
+    Reason = "Stores workflow definitions, instances, and runtime data in SQLite.",
+    Providers = new[] { "SQLite" },
+    ConfigurationKeys = new[] { "ConnectionString" })]
 public class SqliteWorkflowPersistenceShellFeature : CombinedPersistenceShellFeatureBase
 {
 }
 ```
 
-The host no longer needs to know every low-level relationship up front. A feature can say what it depends on and what kind of thing it represents.
+That lets a feature say: I am persistence, I depend on these lower-level pieces, and my important infrastructure setting is a connection string.
 
-That second part matters more than it looks. A SQLite persistence feature can now say, in effect: I am persistence, I expect a SQLite database, and this is the configuration key you probably care about.
+## Why are manifest hints useful?
 
-I would still call this foundation work. But it is useful foundation work, which is usually the kind that ages better.
+Recent follow-up work added package manifest and runtime-kind hints:
 
-## Why this is better than a larger `Program.cs`
+- [Add `PackageManifestHints.cs` to solution and compile include in build props](https://github.com/elsa-workflows/elsa-core/commit/2f668738113f3518dab2b565fcbe0b16420f010b)
+- [Add platform manifest runtime kind hints](https://github.com/elsa-workflows/elsa-extensions/commit/d407e9621770a55427ac6c2315bd779da08d5fea)
+- [Add shell feature manifest categories](https://github.com/elsa-workflows/elsa-core/commit/4c104635ac64f082bb468ed44e51f7f6d5f4e45f)
 
-A workflow platform accumulates cross-cutting concerns fast:
+I would not sell those commits as a flashy end-user feature. They are better understood as catalog infrastructure. Packages and shell features are getting better at describing what they are, where they belong, and what infrastructure they expect.
 
-- persistence,
-- scheduling,
-- HTTP endpoints,
-- authentication,
-- tenant routing,
-- dashboard modules,
-- distributed execution,
-- package-provided extensions.
+That is the kind of foundation a package-driven host needs. If a server can load modules dynamically, it also needs enough metadata to explain those modules to humans and tooling.
 
-If all of that only lives in `Program.cs`, startup becomes the place where every composition decision gets serialized into one file. That is manageable for a while. Then it becomes the place nobody wants to touch without reading half the application first.
+## When should you use this model?
 
-Shell features push some of that burden back into the modules themselves.
+Use shell features when composition varies by shell, tenant, package, environment, or product edition. They are a strong fit for internal platforms, white-label products, multi-tenant workflow servers, and modular Elsa hosts that load packages over time.
 
-In practice, that means:
+Keep explicit startup code when the host is simple. One application, one persistence option, one authentication model, and no meaningful modularity pressure do not require a configuration-driven shell system.
 
-- a package can contribute a feature without forcing the host to manually mirror all of its options,
-- a shell can opt into a feature set that is different from the next shell,
-- the host can stay relatively small even as the runtime becomes more modular,
-- and the path toward package catalogs and more dynamic composition stops feeling bolted on.
-
-That last point is where the recent manifest category and runtime-kind work starts to make sense. It does not make the system magical. It just gives packages a better way to describe themselves, which is exactly the kind of boring detail that makes modular systems less painful.
-
-## It is still not for every Elsa app
-
-If your Elsa application has one host, one persistence choice, and no serious modularity concerns, I would keep things explicit.
-
-There is no prize for moving everything into configuration.
-
-Where shell features start paying for themselves is when the host stops being one simple host. Multi-tenant setups, internal workflow platforms, white-label products, and package-driven servers are where this becomes much easier to justify.
-
-That is why I think this work is worth calling out now. Not because it is flashy, but because it changes how Elsa can be assembled over time.
-
-If you have been looking at a growing `Program.cs` and thinking this should not be the only place where Elsa composition can live, that instinct is probably right.
+The useful shift is optionality. Elsa can still be wired directly. But when `Program.cs` starts absorbing every product and environment decision, shell features give those decisions a cleaner place to live.

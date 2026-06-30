@@ -1,9 +1,9 @@
 ---
-title: "Introducing Elsa Templates"
+title: "Introducing Elsa Templates for dotnet new"
 slug: "introducing-elsa-templates"
-description: "Elsa Templates provides dotnet new templates for scaffolding new Elsa Server, Elsa Studio, and combined Elsa applications without copying sample hosts by hand."
+description: "Elsa Templates provides dotnet new templates for scaffolding Elsa Server, Elsa Studio, and combined Elsa applications with explicit hosting choices."
 publishedAt: "2026-05-31"
-updatedAt: null
+updatedAt: "2026-06-30"
 status: "published"
 authors:
   - "sipke"
@@ -15,32 +15,31 @@ tags:
   - "developer-experience"
 featuredImage: "../assets/2026-05-31-introducing-elsa-templates/featured.png"
 featuredImageAlt: "Generated technical illustration showing project template blocks flowing from a terminal into workflow, server, and Studio-style application components"
-seoTitle: "Introducing Elsa Templates"
-seoDescription: "Scaffold new Elsa Server, Elsa Studio, and combined Elsa applications with dotnet new templates."
+seoTitle: "Introducing Elsa Templates for dotnet new"
+seoDescription: "Scaffold Elsa Server, Elsa Studio, and combined Elsa applications with dotnet new templates for hosting, persistence, auth, and feature models."
 redirectFrom: []
 ---
 
-# Introducing Elsa Templates
+Starting a new Elsa application should not begin with copying a sample host and deleting the parts you do not need.
 
-Starting a new Elsa application should not begin with copying a sample host and then deleting the parts you do not need.
+That works once or twice. After that, the small choices start to pile up. Do you want only Elsa Server, or Studio as well? Should Studio run as Blazor Server, Blazor WebAssembly, or a hybrid host? Which EF Core persistence provider should the server use? Should the server use static feature registration, or the CShells-based model?
 
-That works once or twice. After that, the small choices start to pile up:
+In our experience, those first setup choices are where teams either get momentum or start treating the framework as something they have to reverse-engineer from samples.
 
-- do you want an Elsa Server only, or Studio as well?
-- should Studio run as Blazor Server, WebAssembly, or a hybrid setup?
-- which persistence provider should the server use?
-- do you want static feature registration, or the CShells-based modular setup?
-- which authentication provider should Studio be wired for?
+**Elsa Templates** is a `dotnet new` template package that turns those choices into explicit command-line options. The repository is [elsa-workflows/elsa-templates](https://github.com/elsa-workflows/elsa-templates), and the package is published as `Elsa.Templates`.
 
-None of these choices are difficult on their own. But together they make the first few minutes of a new Elsa project more fiddly than they need to be.
+![Generated technical illustration showing project template blocks flowing from a terminal into workflow, server, and Studio-style application components](../assets/2026-05-31-introducing-elsa-templates/featured.png)
 
-So I created [elsa-workflows/elsa-templates](https://github.com/elsa-workflows/elsa-templates): a set of .NET solution templates for getting new Elsa projects off the ground with `dotnet new`.
+> **Key Takeaways**
+> - Elsa Templates currently defines `elsa-server`, `elsa-studio`, and `elsa-combined`.
+> - The templates expose choices for feature model, persistence, Studio hosting, authentication, and optional Labels support.
+> - Smoke tests pack the templates, install them into an isolated template hive, generate supported outputs, and build the generated solutions.
 
-## What the templates generate
+## What Do Elsa Templates Generate?
 
-The repository currently contains three templates.
+The repository README lists three templates: `elsa-server`, `elsa-studio`, and `elsa-combined` ([README](https://github.com/elsa-workflows/elsa-templates/blob/main/README.md)). Each template generates normal .NET projects, not a special runtime format. You can open the output, change it, and treat it as application code.
 
-`elsa-server` creates an Elsa Server host. It supports static feature registration as well as the newer CShells-based feature model, and it lets you choose an EF Core persistence provider:
+The server template focuses on the backend workflow host:
 
 ```bash
 dotnet new elsa-server -n MyElsaServer --feature-model static
@@ -52,7 +51,7 @@ dotnet new elsa-server -n MyElsaServer --persistence postgresql
 dotnet new elsa-server -n MyElsaServer --persistence oracle
 ```
 
-`elsa-studio` creates an Elsa Studio solution. The useful bit here is that Studio is not a single shape. Depending on the application, you might want Blazor Server, Blazor WebAssembly, or a hybrid setup where the host can decide how Studio starts.
+The Studio template focuses on the UI host:
 
 ```bash
 dotnet new elsa-studio -n MyElsaStudio --hosting server
@@ -60,7 +59,7 @@ dotnet new elsa-studio -n MyElsaStudio --hosting wasm
 dotnet new elsa-studio -n MyElsaStudio --hosting hybrid
 ```
 
-It also supports the authentication options we tend to reach for when building real Elsa applications:
+It also exposes authentication and optional Labels support:
 
 ```bash
 dotnet new elsa-studio -n MyElsaStudio --auth-provider elsa-identity
@@ -68,7 +67,7 @@ dotnet new elsa-studio -n MyElsaStudio --auth-provider open-id-connect
 dotnet new elsa-studio -n MyElsaStudio --auth-provider elsa-login --with-labels
 ```
 
-`elsa-combined` generates a Server and Studio solution together. This is probably the one many people will start with when they are trying Elsa locally or building an internal workflow app:
+The combined template gives you Server and Studio in one solution:
 
 ```bash
 dotnet new elsa-combined -n MyElsaApp --feature-model static --studio-hosting server
@@ -76,23 +75,24 @@ dotnet new elsa-combined -n MyElsaApp --feature-model shell --studio-hosting was
 dotnet new elsa-combined -n MyElsaApp --feature-model shell --studio-hosting hybrid --persistence postgresql --auth-provider open-id-connect --with-labels
 ```
 
-The point is not to hide how Elsa works. The generated projects are normal .NET projects. You can open them, change them, remove what you do not need, and treat them like application code.
+The goal is not to hide Elsa. The goal is to start from a working baseline that already matches your first architectural choice.
 
-The point is to start from a working baseline.
+## Why Does This Matter?
 
-## Why this matters
+Templates are not glamorous, but they shape first impressions. If the first step is copy, paste, delete, and guess, people assume the rest of the framework will feel the same. If the first step gives them a working host with the right package set, they can spend their attention on the workflow they came to build.
 
-Templates are not glamorous infrastructure, but they have an outsized effect on how a framework feels.
+Elsa has several valid starting points:
 
-If the first step is messy, people reasonably assume the rest will be messy too. If the first step gives them a working host, a sensible project layout, and the right packages wired together, they can spend their attention on the workflow they actually want to build.
+- Embed workflows in an existing ASP.NET Core application.
+- Run Elsa Server separately and use Studio as the operational UI.
+- Start with SQLite for evaluation.
+- Use PostgreSQL, SQL Server, or Oracle from day one.
+- Use OpenID Connect because the rest of the environment already does.
+- Use CShells-based feature registration for a modular host.
 
-For Elsa, that matters because there are several valid starting points.
+That last point connects directly to [building modular .NET applications with CShells](/blog/building-modular-dotnet-applications-with-cshells), [building multitenant web apps with CShells](/blog/building-multitenant-web-apps-in-dotnet-with-cshells), and [configuring Elsa with shell features](/blog/configuring-elsa-with-shell-features). Different teams start from different runtime shapes. A single starter project would hide those choices. A template can make them explicit.
 
-Some applications embed workflows into an existing ASP.NET Core system. Some run Elsa Server separately and use Studio as an operational UI. Some need PostgreSQL from day one. Some are still fine with SQLite while they explore. Some teams want OpenID Connect immediately because that is how everything in their environment is secured.
-
-There should not be one blessed starter project that quietly assumes all of those choices.
-
-`dotnet new` is a good fit for this because it lets the choices be explicit:
+For example:
 
 ```bash
 dotnet new elsa-combined \
@@ -104,41 +104,37 @@ dotnet new elsa-combined \
   --with-labels
 ```
 
-That command says quite a lot about the kind of application you want to build, and it gives you a solution shaped accordingly.
+That command says quite a lot. It asks for a modular server, hybrid Studio hosting, PostgreSQL persistence, OpenID Connect authentication, and Labels support. The generated solution should reflect that, without making the developer assemble it by hand.
 
-## Versioned with Elsa
+## How Are Versions Handled?
 
-One design choice in the templates repository is that `main` tracks the latest stable Elsa release. At the time the repository was created, that baseline is Elsa `3.7.0`.
+The repository's version policy is intentionally boring. `main` tracks the latest stable Elsa release. At repository creation time, that baseline was Elsa `3.7.0`. Version-specific branches can target exact stable or preview versions such as `3.7.0`, `3.8.0-preview`, or `3.8.0-preview.1234`.
 
-Version-specific branches can target exact stable or preview versions, for example:
+That matters because templates are only useful if the generated output restores and builds. A template package that mixes stable and preview dependency lines creates confusion at the worst possible time: the first few minutes of a new project.
 
-- `3.7.0`
-- `3.8.0-preview`
-- `3.8.0-preview.1234`
+The README also calls out a practical constraint: the stable template package exposes options that restore and build against stable Elsa packages. Preview-only Studio modules and the current MySQL EF provider are intentionally not exposed from `main`.
 
-This is important because templates are only useful when the generated output actually restores and builds. A template that points at packages from two different release lines is worse than no template at all.
+That keeps the default path predictable.
 
-The stable template package exposes the options that build against stable Elsa packages. Preview-only modules stay on preview branches and preview packages. That is a small constraint, but it keeps the default path boring in the best sense of the word.
+## How Are The Templates Tested?
 
-## Tested as generated projects
+The smoke tests do more than inspect template files. They pack the template package, install it into an isolated template hive, generate projects or solutions for supported option combinations, and run `dotnet build` on the generated `.slnx` output.
 
-The smoke tests for the repository pack the template package, install it into an isolated template hive, generate the supported option combinations, and build the generated outputs.
+The test suite covers:
 
-That last part matters.
+- both server feature models: `static` and `shell`
+- server persistence providers: `sqlite`, `sqlserver`, `postgresql`, and `oracle`
+- Studio hosting modes: `server`, `wasm`, and `hybrid`
+- Studio auth choices with Labels in representative combinations
+- combined Server and Studio combinations
 
-It is easy for a template to look correct as a set of files while still failing once `dotnet restore` or `dotnet build` runs. The tests exercise the templates the same way users will: install, generate, restore, build.
+The test source is available in [`TemplateSmokeTests.cs`](https://github.com/elsa-workflows/elsa-templates/blob/main/test/Elsa.Templates.Tests/TemplateSmokeTests.cs). One small but important check also asserts generated hosts do not map health checks to `/`, because that would interfere with normal app routes.
 
-```bash
-dotnet test test/Elsa.Templates.Tests/Elsa.Templates.Tests.csproj
-```
+This is the right kind of test for templates. The user experience is install, generate, restore, build. The tests should follow the same path.
 
-The goal is not just to ship template files. The goal is to make sure the generated applications remain valid as Elsa evolves.
+## How Do You Install Them?
 
-## Installing
-
-The template package is `Elsa.Templates`.
-
-For stable builds, installation is the standard .NET template flow:
+For stable builds, use the standard .NET template flow:
 
 ```bash
 dotnet new install Elsa.Templates
@@ -157,16 +153,24 @@ dotnet pack src/Elsa.Templates/Elsa.Templates.csproj
 dotnet new install artifacts/package/release/Elsa.Templates.*.nupkg
 ```
 
-The repository is here:
+After that, `dotnet new list elsa` should show the Elsa template short names.
 
-[https://github.com/elsa-workflows/elsa-templates](https://github.com/elsa-workflows/elsa-templates)
+## FAQ
 
-## A small thing, but a useful one
+### Are Elsa Templates a runtime feature?
 
-Elsa Templates is deliberately practical work. It does not add a new runtime feature. It does not change how workflows execute.
+No. They do not change workflow execution, persistence, Studio behavior, or deployment. They generate starter solutions that use existing Elsa packages and conventions.
 
-It removes some friction from the beginning of a project.
+### Should every Elsa app start from `elsa-combined`?
 
-That is still worth doing. A workflow engine is usually adopted in the middle of a real application, with persistence choices, authentication requirements, hosting preferences, and deployment constraints already waiting in the room. Good templates cannot make those decisions disappear, but they can give you a clean starting point for the decisions you have already made.
+No. `elsa-combined` is useful for local evaluation and internal workflow apps where Server and Studio can live together. Use `elsa-server` when the backend host is separate. Use `elsa-studio` when you only need the UI solution.
 
-And sometimes that is exactly what you need.
+### Why not just keep sample applications?
+
+Samples are good for teaching specific ideas. Templates are better for starting real projects because they let you choose the hosting, persistence, auth, and feature model up front, then generate a solution with those choices already applied.
+
+## Closing Thoughts
+
+Elsa Templates is deliberately practical work. It does not add a new runtime concept. It removes a small but repeated source of friction from the start of a project.
+
+That is still worth doing. Workflow engines are usually adopted inside real applications, where persistence, authentication, hosting, and deployment decisions are already waiting. A good template cannot make those decisions disappear, but it can give you a clean starting point for the decisions you have already made.

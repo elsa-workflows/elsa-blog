@@ -1,9 +1,9 @@
 ---
-title: "Workflow Alterations in Elsa 3.8"
+title: "Workflow Alterations in Elsa 3.8: Runtime Correction"
 slug: "workflow-alterations-in-elsa-3-8"
-description: "A closer look at Elsa 3.8 workflow alterations: staged runtime correction, alteration plans and jobs, built-in operations, Studio UI, and operational guardrails."
+description: "Elsa 3.8 workflow alterations add staged runtime correction with dry runs, plans, jobs, built-in operations, Studio staging, and operational guardrails."
 publishedAt: "2026-06-06"
-updatedAt: null
+updatedAt: "2026-06-30"
 status: "published"
 authors:
   - "sipke"
@@ -15,79 +15,64 @@ tags:
   - "operations"
 featuredImage: "../assets/2026-06-06-workflow-alterations-in-elsa-3-8/featured.png"
 featuredImageAlt: "Generated technical illustration of a running workflow with a staged alteration plan prepared beside it"
-seoTitle: "Workflow Alterations in Elsa 3.8"
-seoDescription: "Elsa 3.8 adds Studio support for workflow alterations: staged runtime correction through plans, jobs, built-in operations, logs, and status tracking."
+seoTitle: "Workflow Alterations in Elsa 3.8: Runtime Correction"
+seoDescription: "Elsa 3.8 workflow alterations add staged runtime correction with dry runs, plans, jobs, built-in operations, Studio staging, and operational guardrails."
 redirectFrom: []
 ---
 
-# Workflow Alterations in Elsa 3.8
+# Workflow Alterations in Elsa 3.8: Runtime Correction
 
-Changing a running workflow instance is not something a product should make feel casual.
+Elsa 3.8 preview 1 adds the Studio experience for workflow alterations, building on the Core alteration model. The point is controlled runtime correction: prepare an alteration, review the target, submit a plan, then inspect jobs and logs ([Elsa 3.8 Preview 1](/blog/elsa-3-8-preview-1), 2026).
 
-But real workflow systems eventually need a controlled way to do it.
+Changing a running workflow should never feel casual. Still, real systems need a supported path for cases where the outside world moved on, a variable is wrong, an activity is stuck, or an instance needs to move to a newer definition version.
 
-An activity might be stuck because the outside world changed. A variable might contain a wrong value. An instance might need to move to a newer workflow definition version. A waiting activity might need to be cancelled because the business process already continued elsewhere.
+> **Key Takeaways**
+> - Elsa alterations separate intent (`AlterationPlan`) from per-instance execution (`AlterationJob`).
+> - The Core API exposes `dry-run`, `run`, `submit`, and `get` operations with `run:alterations` and `read:alterations` permissions.
+> - Studio stages alterations before submission, so runtime correction feels like an operational change rather than a random button click.
 
-The alternative is often worse: edit data by hand, restart the instance, replay from the beginning, or tell operators there is no supported path.
+In our experience, the alternative is usually worse: database edits, restarts, replaying from the beginning, or telling operators that a stuck instance has no supported recovery path.
 
-Elsa 3.8 preview 1 adds the Studio experience around alterations, building on the Core alteration model.
+## What is a workflow alteration?
 
-The design is deliberately staged. You do not click a random button on a live process and hope. You prepare an alteration plan, review what it targets, submit it, and inspect the resulting jobs and logs.
+A **workflow alteration** is an explicit change applied to a running workflow instance. Elsa 3.8 includes built-in alteration types for cancelling a workflow, cancelling an activity, scheduling an activity, modifying a variable, and migrating an instance to a newer version.
 
-That is the right mental model for runtime correction.
+The important word is explicit. An alteration is not a hidden state patch. It is a typed operation with a handler, target, plan, job, status, and log.
 
-## Plans and jobs
+That gives operators and developers a shared model. You can talk about what was intended, which instances were targeted, what ran, what failed, and what log entries were produced.
 
-The Core model separates an alteration plan from alteration jobs.
+## Why split plans from jobs?
 
-An alteration plan is the intended change: which alterations should be applied and which workflow instances should be targeted.
+Elsa splits alteration intent from execution. An `AlterationPlan` describes the requested changes and target selection. An `AlterationJob` records what happened when that plan was applied to one workflow instance.
 
-An alteration job is the execution of that plan for one workflow instance.
+That distinction matters whenever a plan targets more than one instance. A single submitted plan can produce several jobs. One job may complete while another fails. The operator needs per-instance status, not one vague result.
 
-That distinction matters when a plan targets more than one instance. A plan can be submitted once, then produce several jobs with their own status and log entries. One instance may succeed while another fails. The operator needs to see that at the job level, not just as a single vague result.
+The model supports that shape:
 
-The core entities reflect this:
+| Concept | What it means |
+| --- | --- |
+| `AlterationPlan` | Intended changes, target filter or instances, plan status, timestamps |
+| `AlterationJob` | Execution for one workflow instance |
+| `AlterationLog` | Entries produced while applying the alteration |
+| Plan status | pending, generating, dispatching, completed, failed |
+| Job status | pending, running, completed, failed |
 
-- `AlterationPlan` contains the alterations, target instance IDs, status, and timestamps.
-- `AlterationJob` records the plan ID, workflow instance ID, status, serialized log, and timestamps.
-- `AlterationLog` and `AlterationLogEntry` capture what happened while applying the change.
+This is the first guardrail. It turns "change the live workflow" into an object you can submit, inspect, and reason about later.
 
-Job statuses are simple on purpose: pending, running, completed, failed. Plans add the intermediate generating and dispatching states because a submitted plan may need to create and dispatch multiple jobs before those jobs run.
+## What does the Core API expose?
 
-## The built-in alterations
-
-Elsa 3.8 includes built-in alteration types for common operational corrections:
-
-- cancel a workflow
-- cancel an activity
-- schedule an activity
-- modify a variable
-- migrate to a newer version
-
-Each alteration has a handler that receives an `AlterationHandlerContext`. That context exposes the alteration, workflow execution context, workflow, cancellation token, service provider, and alteration log. It also lets the handler mark the operation as succeeded or failed.
-
-There is also a commit hook for permanent side effects. The XML comment is a useful clue about the design intent: use the hook for work that should happen when the alteration is committed, such as deleting records from a database.
-
-That is the sort of detail that makes alterations feel like an operational subsystem rather than a bag of state mutations.
-
-## The API shape
-
-The alterations API has four main operations:
+The Core API exposes four main route fragments under the configured Elsa API prefix:
 
 ```text
-POST /elsa/api/alterations/dry-run
-POST /elsa/api/alterations/run
-POST /elsa/api/alterations/submit
-GET  /elsa/api/alterations/{id}
+POST /alterations/dry-run
+POST /alterations/run
+POST /alterations/submit
+GET  /alterations/{id}
 ```
 
-`dry-run` determines which workflow instances a submit request would target. It does not apply the alterations. This is useful when the target is expressed as a filter and you want to inspect the instance IDs before submitting.
+`dry-run` finds workflow instance IDs that match the target filter. It validates timestamp filters and returns the matched IDs without applying the alterations.
 
-`run` applies alterations directly to explicit workflow instance IDs and dispatches successfully updated workflows when scheduled work is produced.
-
-`submit` stores a plan and schedules it for execution through the alteration plan scheduler.
-
-`get` loads a plan together with the jobs created for it.
+`run` applies alterations directly to explicit workflow instance IDs. `submit` stores a plan and schedules it through the alteration plan scheduler. `get` loads a plan and the jobs created for it.
 
 The mutable operations require:
 
@@ -101,37 +86,59 @@ Reading a plan requires:
 read:alterations
 ```
 
-The timestamp filters are validated through the workflow instance filter validation path before the dry-run and submit endpoints accept them. That is a small but important boundary, because alteration targeting should not accept arbitrary timestamp filter shapes.
+Those permissions are not decoration. Alterations can cancel running work, schedule activity execution, change variables, and migrate instances. They deserve separate operational access.
 
-## The Studio workflow
+## Which alterations are built in?
 
-Studio adds pages for plans, workflow instance selection, plan details, and instance editing. It also adds the designer-side pieces that make the feature usable: an alteration catalog, staging service, side panel, configuration dialog, and submit dialog.
+Studio's alteration catalog exposes five built-in operations. The catalog names are intentionally direct:
+
+- `Cancel`: cancel the entire workflow instance.
+- `CancelActivity`: cancel a specific running activity.
+- `ScheduleActivity`: schedule a specific activity for execution.
+- `ModifyVariable`: set a workflow variable to a new JSON value.
+- `Migrate`: move the running instance to a newer published workflow version.
 
 ![Elsa Studio alterations builder side panel with instance status and whole-instance actions](../assets/2026-06-01-elsa-3-8-preview-1/alterations-builder.png)
 
-The staging service is intentionally scoped to an editor session. It holds the alterations the user has selected before they are submitted. That local staging step is what makes the workflow feel deliberate:
+The `ModifyVariable` operation asks for a variable and a JSON value. `Migrate` asks for a target version. Activity-targeted operations use the selected activity context.
+
+That catalog is deliberately small. It covers common correction paths without pretending that every possible state mutation should be available from the UI.
+
+## How does Studio stage a change?
+
+Studio adds pages for alteration plans, workflow instance selection, plan details, and instance editing. The designer side adds an alteration catalog, staging service, side panel, configuration dialog, and submit dialog.
+
+The staging service is scoped to the editor session. It keeps a list of staged alterations, supports add, update, remove, clear, and counts staged items for a target activity.
+
+That produces a deliberate flow:
 
 1. Find or inspect the workflow instance.
 2. Add one or more alterations from the catalog.
 3. Configure their fields.
 4. Review the staged changes.
-5. Submit the plan.
-6. Inspect jobs, statuses, and logs.
+5. Submit the alteration plan.
+6. Inspect the plan, jobs, statuses, and logs.
 
-The UI language matters here. An alteration is not just another activity button. It is an operational change to runtime state.
+The submit flow opens an "Submit alteration plan" dialog with the workflow instance ID and staged items. After a successful submit, Studio clears the staging service so the editor does not keep stale pending changes.
 
-## Why this exists
+That detail matters. An operator should not return to an edit surface that still looks ready to submit an already-submitted correction.
 
-Long-running workflows are not like short request handlers.
+## What guardrails should teams add?
 
-They can wait for hours, days, or months. They can coordinate external systems. They can span versions of a process. They can get stuck because of data, a missing callback, a cancelled business event, a failed integration, or a deployment that changed the world around them.
+Alterations give Elsa a supported path for correction. They do not replace process.
 
-In that kind of system, "just restart it" is often not an acceptable operational answer.
+At minimum, teams should decide who can run alterations, which environments allow them, which alteration types are acceptable, and how plan/job logs are reviewed after use.
 
-Alterations give Elsa a supported path for a class of corrections that operators already need in real systems. The feature does not remove the need for careful workflow design, retries, compensation, incident handling, or good observability. It also does not mean every user should be allowed to mutate every running instance.
+Good diagnostics also matter. Before changing runtime state, operators need enough context to know why the instance is stuck. After changing it, they need enough context to verify what happened. Pair alterations with [structured logs](/blog/structured-logs-in-elsa-3-8), [console logs](/blog/console-logs-in-elsa-3-8), and [OpenTelemetry diagnostics](/blog/opentelemetry-diagnostics-in-elsa-3-8) where those signals help.
 
-Permissions, review, audit expectations, and internal operating procedures still matter.
+Also be conservative with variable changes. A JSON value can be syntactically valid and still be semantically wrong for the workflow. Runtime correction should be reviewed like any other operational change.
 
-What Elsa 3.8 adds is a product shape for runtime correction: plans, jobs, handlers, logs, statuses, a staged Studio workflow, and a set of built-in operations that cover common cases.
+## When should alterations be used?
 
-That is a much better foundation than telling people to patch workflow state by hand.
+Use alterations when the workflow instance is still valuable and the correction is narrower than a restart, replay, manual database patch, or full incident workaround.
+
+Good candidates include cancelling an activity that should no longer wait, scheduling an activity after an external event already happened, correcting a variable that blocks progress, or migrating an instance after a safe definition change.
+
+Poor candidates include routine business logic, missing retry design, missing compensation design, or ad hoc experiments in production. If the same alteration is needed repeatedly, the workflow design probably needs attention.
+
+The useful part of Elsa 3.8 is the product shape: typed alterations, plans, jobs, logs, permissions, a staged Studio workflow, and a small catalog of common operations. That is a better foundation than telling teams to patch workflow state by hand.

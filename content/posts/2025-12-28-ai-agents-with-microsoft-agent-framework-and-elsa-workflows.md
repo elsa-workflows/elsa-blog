@@ -1,9 +1,9 @@
 ---
 title: "AI Agents with Microsoft Agent Framework and Elsa Workflows"
 slug: "ai-agents-with-microsoft-agent-framework-and-elsa-workflows"
-description: "Agentic workflows are becoming a first-class architectural concern."
+description: "Use Microsoft Agent Framework for agent collaboration, then expose that capability as an Elsa activity for long-running .NET workflows."
 publishedAt: "2025-12-28"
-updatedAt: null
+updatedAt: "2026-06-30"
 status: "published"
 authors:
   - "sipke"
@@ -13,13 +13,224 @@ tags:
   - "dotnet"
   - "docker"
   - "workflow"
+  - "ai-agents"
 featuredImage: "https://cdn-images-1.medium.com/max/1200/1*K1pV07McSDkDHbm_2bbLKg.png"
 featuredImageAlt: "AI Agents with Microsoft Agent Framework and Elsa Workflows"
 sourceName: "Medium"
 sourceUrl: "https://medium.com/@sipkeschoorstra/ai-agents-with-microsoft-agent-framework-and-elsa-workflows-4870e33a7134"
 seoTitle: "AI Agents with Microsoft Agent Framework and Elsa Workflows"
-seoDescription: "Agentic workflows are becoming a first-class architectural concern."
+seoDescription: "Learn where Microsoft Agent Framework workflows end, where Elsa Workflows begins, and how to expose .NET agent methods as Elsa activities."
 redirectFrom: []
 ---
 
-<section><div><div><h3>AI Agents with Microsoft Agent Framework and Elsa Workflows</h3><h4>Agentic workflows are becoming a first-class architectural concern.</h4></div><div><figure><img data-image-id="1*K1pV07McSDkDHbm_2bbLKg.png" data-width="1536" data-height="1024" data-is-featured="true" src="https://cdn-images-1.medium.com/max/1200/1*K1pV07McSDkDHbm_2bbLKg.png"></figure></div><div><blockquote><strong>TL;DR</strong><br>We start with an agent-native workflow using Microsoft Agent Framework, encapsulate it as a reusable capability, and then move orchestration into Elsa Workflows. The result is a clear mental model for when agents should orchestrate, and when workflows should.</blockquote><p>I’ve recently started exploring Microsoft Agent Framework, a set of libraries for .NET developers who want to build advanced AI agents with clearly defined skills, orchestrated by so-called <em>workflow agents</em>. From what I’ve seen so far, it’s very impressive. These workflow agents coordinate multiple agents to collaborate toward a shared goal.</p><p>Adding cognition to your application has never been easier. And because agents can be invoked just like any other capability, the same now applies to your workflow applications.</p><p>All it takes is creating a custom activity and calling your agent from it. Even better, with the release of Elsa 3.6, .NET classes and their public methods can now be called directly from workflows.</p><p>Let’s see how that works.</p></div></div></section><section><div><div><h3>What we’re building</h3><p>To demonstrate how to create agents using Microsoft Agent Framework and then leverage them as activities in Elsa Workflows, we’ll work through a series of milestones. Each milestone represents an incremental architectural step, starting from a basic ASP.NET Core application and ending with a full-fledged Elsa Workflows engine orchestrating agents.</p><p>In the sample, we’ll define three agents:</p><ol><li><em>Writer Agent</em>: writes a story on a given topic in a specific genre</li><li><em>Editor Agent</em>: reviews the story, fixes grammar, and improves the plot</li><li><em>Workflow Agent</em>: orchestrates the Writer and Editor agents</li></ol><p>We’ll start from an empty ASP.NET Core application targeting .NET 10 and incrementally build toward:</p><ol><li>A multi-agent workflow using Microsoft Agent Framework (Writer → Editor)</li><li>A reusable <code>StoryWriterAgent</code> that encapsulates that collaboration</li><li>An Elsa activity that encapsulates the <code>StoryWriterAgent</code>.</li><li>A refactoring where Elsa becomes the primary orchestration engine and agents become first-class workflow activities</li></ol></div></div></section><section><div><div><h3>Starting point: an empty ASP.NET Core app</h3><p>We’ll create a new empty ASP.NET Core project to keep the architecture explicit and transparent.</p><pre data-code-block-mode="1" spellcheck="false" data-code-block-lang="bash"><span>dotnet new web -n AgentElsaDemo -f net10.0<br /><span>cd</span> AgentElsaDemo</span></pre><p>At this point, the project contains little more than <code>Program.cs</code>.</p></div></div></section><section><div><div><h3>Milestone 1: Agent-native orchestration with Microsoft Agent Framework</h3><p>Microsoft Agent Framework includes a workflow model designed specifically for agent interactions:</p><ul><li><strong>Nodes</strong> represent agents</li><li><strong>Edges</strong> represent transitions</li><li><strong>Conditions</strong> control routing</li><li>The <em>workflow itself</em> can be executed as <em>a single agent</em></li></ul><p>In other words, it already <em>is</em> a workflow engine. Just a specialized one focussed on agent collaboration.</p><h4>Installing packages</h4><pre data-code-block-mode="2" spellcheck="false" data-code-block-lang="bash"><span>dotnet add package Microsoft.Agents.AI --prerelease<br />dotnet add package Microsoft.Agents.AI.OpenAI --prerelease<br />dotnet add package Microsoft.Agents.AI.Workflows --prerelease<br />dotnet add Microsoft.SemanticKernel.Connectors.OpenAI</span></pre><p>These packages allow us to define agents backed by OpenAI models and compose them into agent-native workflows.</p><p>Configure your OpenAI API key via environment variables or configuration. In this sample, we’ll use <code>OPENAI__APIKEY</code>.</p><h4>Defining agents</h4><p>In <code>Program.cs</code>, we’ll define two simple agents:</p><ul><li><strong>Writer</strong>: produces a first draft</li><li><strong>Editor</strong>: improves that draft</li></ul><pre data-code-block-mode="1" spellcheck="false" data-code-block-lang="php"><span><span>var</span> writer = chatClient.<span>CreateAIAgent</span>(<br />    <span>name</span>: <span>&quot;Writer&quot;</span>,<br />    <span>instructions</span>: <span>&quot;Write a short story based on the provided topic.&quot;</span><br />);<br /><br /><span>var</span> editor = chatClient.<span>CreateAIAgent</span>(<br />    <span>name</span>: <span>&quot;Editor&quot;</span>,<br />    <span>instructions</span>: <span>&quot;Improve the draft: fix grammar, improve flow, and tighten the plot.&quot;</span><br />);</span></pre><h4>Building an agentic workflow</h4><p>Next, let’s create a sequential workflow that will invoke the Writer agent and Editor agent for us.</p><pre data-code-block-mode="1" spellcheck="false" data-code-block-lang="csharp"><span><span>var</span> workflow = AgentWorkflowBuilder.BuildSequential(writer, editor);<br /><span>var</span> workflowAgent = workflow.AsAgent();<br /><br /><span>var</span> result = <span>await</span> workflowAgent.RunAsync(<br />    <span>&quot;Write a short story about a haunted lighthouse.&quot;</span><br />);</span></pre><p>From the outside, the entire Writer → Editor collaboration is exposed as a single callable agent. This is a powerful property: agent workflows can be composed hierarchically, just like regular agents, without leaking internal orchestration details.</p><p>What follows is the complete initial code listing, wired up as a minimal API endpoint.</p><pre data-code-block-mode="1" spellcheck="false" data-code-block-lang="csharp"><span><span>using</span> Microsoft.Agents.AI.Workflows;<br /><span>using</span> Microsoft.Extensions.AI;<br /><br /><span>var</span> builder = WebApplication.CreateBuilder(args);<br /><span>var</span> configuration = builder.Configuration;<br /><span>var</span> services = builder.Services;<br /><span>var</span> openApiKey = configuration[<span>&quot;OpenAI:ApiKey&quot;</span>]!;<br />services.AddOpenAIChatClient(<span>&quot;gpt-4o&quot;</span>, openApiKey);<br /><span>var</span> app = builder.Build();<br /><br />app.MapGet(<span>&quot;/&quot;</span>, () =&gt; <span>&quot;Hello World!&quot;</span>);<br />app.MapPost(<span>&quot;/write-story&quot;</span>, <span>async</span> (IChatClient chatClient) =&gt;<br />{<br />    <span>var</span> writer = chatClient.CreateAIAgent(<br />        name: <span>&quot;Writer&quot;</span>,<br />        instructions: <span>&quot;Write a short story based on the provided topic.&quot;</span><br />    );<br /><br />    <span>var</span> editor = chatClient.CreateAIAgent(<br />        name: <span>&quot;Editor&quot;</span>,<br />        instructions: <span>&quot;Improve the draft: fix grammar, improve flow, and tighten the plot.&quot;</span><br />    );<br /><br />    <span>var</span> workflow = AgentWorkflowBuilder.BuildSequential(writer, editor);<br />    <span>var</span> workflowAgent = workflow.AsAgent();<br /><br />    <span>var</span> result = <span>await</span> workflowAgent.RunAsync(<br />        <span>&quot;Write a short story about a haunted lighthouse.&quot;</span><br />    );<br />    <br />    <span>return</span> result.Text;<br />});<br /><br />app.Run();</span></pre><p>When you run this program and send a <code>POST</code> request to <code>/write-story</code>, you should receive a short story about a haunted lighthouse after a few seconds.</p></div></div></section><section><div><div><h3>Milestone 2: Encapsulating the workflow as <code>StoryWriterAgent</code></h3><p>The hard-coded orchestration logic in <code>Program.cs</code> is useful as a proof of concept, but not something you’d want to reuse or test easily. Let’s encapsulate it in a dedicated class:</p><pre data-code-block-mode="1" spellcheck="false" data-code-block-lang="csharp"><span><span><span>public</span> <span>class</span> <span>StoryWriterAgent</span>(<span>IChatClient chatClient</span>)</span><br />{<br />    <span><span>public</span> <span>async</span> Task&lt;<span>string</span>&gt; <span>WriteStoryAsync</span>(<span><span>string</span> topic, <span>string</span> genre, CancellationToken cancellationToken = <span>default</span></span>)</span><br />    {<br />        <span>var</span> writer = chatClient.CreateAIAgent(<br />            name: <span>&quot;Writer&quot;</span>,<br />            instructions: <span>&quot;Write a short story based on the provided topic.&quot;</span><br />        );<br /><br />        <span>var</span> editor = chatClient.CreateAIAgent(<br />            name: <span>&quot;Editor&quot;</span>,<br />            instructions: <span>&quot;Improve the draft: fix grammar, improve flow, and tighten the plot.&quot;</span><br />        );<br />        <span>var</span> workflow = AgentWorkflowBuilder.BuildSequential(writer, editor);<br />        <span>var</span> workflowAgent = workflow.AsAgent();<br />        <span>var</span> result = <span>await</span> workflowAgent.RunAsync(<br />            <span>$&quot;Write a short story about <span>{topic}</span> in the genre of <span>{genre}</span>.&quot;</span>, <br />            cancellationToken: cancellationToken);<br />        <span>return</span> result.Text;<br />    }<br />}</span></pre><p>At this point, we have a clean, self-contained agentic capability that can be invoked from anywhere: controllers, background services, workflows, or tests.</p><p>Updating the API to use this class keeps <code>Program.cs</code> simple and declarative.</p><pre data-code-block-mode="2" spellcheck="false" data-code-block-lang="csharp"><span><span>var</span> builder = WebApplication.CreateBuilder(args);<br /><span>var</span> configuration = builder.Configuration;<br /><span>var</span> services = builder.Services;<br /><span>var</span> openApiKey = configuration[<span>&quot;OpenAI:ApiKey&quot;</span>]!;<br /><br />services.AddOpenAIChatClient(<span>&quot;gpt-4o&quot;</span>, openApiKey);<br />services.AddSingleton&lt;StoryWriterAgent&gt;();<br /><br /><span>var</span> app = builder.Build();<br /><br />app.MapGet(<span>&quot;/&quot;</span>, () =&gt; <span>&quot;Hello World!&quot;</span>);<br />app.MapPost(<span>&quot;/write-story&quot;</span>, <span>async</span> (StoryWriterAgent agent, CancellationToken cancellationToken) =&gt; <br />    <span>await</span> agent.WriteStoryAsync(<span>&quot;A haunted lighthouse&quot;</span>, <span>&quot;thriller&quot;</span>, cancellationToken));<br /><br />app.Run();</span></pre></div></div></section><section><div><div><h3>Milestone 3: Treating an agentic workflow as a process step</h3><p>We now have a reusable agent. The next step is to place it inside a broader, long-running process that can be visualized, persisted, and externally driven.</p><p>Before we can invoke it from an Elsa workflow, we need to turn our application into an Elsa Workflows engine.</p><h4>Adding Elsa Server</h4><p>First, add the necessary packages.</p><pre data-code-block-mode="1" spellcheck="false" data-code-block-lang="lua"><span>dotnet add <span>package</span> Elsa <span>--version 3.6.0</span><br />dotnet add <span>package</span> Elsa.Persistence.EFCore.Sqlite <span>--version 3.6.0</span><br />dotnet add <span>package</span> Elsa.Workflows.Api <span>--version 3.6.0</span><br />dotnet add <span>package</span> Elsa.Workflows.Runtime.Distributed <span>--version 3.6.0</span></span></pre><p>Then update <code>Program.cs</code> as follows:</p><pre data-code-block-mode="2" spellcheck="false" data-code-block-lang="csharp"><span><span>using</span> Elsa.Extensions;<br /><span>using</span> Elsa.Persistence.EFCore.Extensions;<br /><span>using</span> Elsa.Persistence.EFCore.Modules.Management;<br /><span>using</span> Elsa.Persistence.EFCore.Modules.Runtime;<br /><span>using</span> Elsa.Workflows.Runtime.Distributed.Extensions;<br /><span>using</span> WebApplication1;<br /><br /><span>var</span> builder = WebApplication.CreateBuilder(args);<br /><span>var</span> configuration = builder.Configuration;<br /><span>var</span> services = builder.Services;<br /><span>var</span> openApiKey = configuration[<span>&quot;OpenAI:ApiKey&quot;</span>]!;<br /><br />services.AddOpenAIChatClient(<span>&quot;gpt-4o&quot;</span>, openApiKey);<br />services.AddSingleton&lt;StoryWriterAgent&gt;();<br /><br /><span>// Setup the Elsa Workflows Engine.</span><br />services.AddElsa(elsa =&gt;<br />{<br />    elsa.UseWorkflowManagement(management =&gt;<br />    {<br />        management.UseEntityFrameworkCore(ef =&gt; ef.UseSqlite());<br />        management.UseCache();<br />    });<br />    elsa.UseWorkflowRuntime(runtime =&gt;<br />    {<br />        runtime.UseDistributedRuntime();<br />        runtime.UseEntityFrameworkCore(ef =&gt; ef.UseSqlite());<br />        runtime.UseCache();<br />    });<br />    elsa.UseWorkflowsApi();<br />    elsa.UseIdentity(identity =&gt;<br />    {<br />        identity.UseAdminUserProvider();<br />        identity.TokenOptions = options =&gt; options.SigningKey = <span>&quot;secret-signing-key-4d28f39b-7761-42ea-8985-a38faaba4b2d&quot;</span>;<br />    });<br />    elsa.UseDefaultAuthentication();<br />    elsa.AddActivitiesFrom&lt;Program&gt;();<br />});<br /><br /><span>// Configure CORS to allow Elsa Studio to invoke the APIs.</span><br />services.AddCors(cors =&gt; <br />    cors.AddDefaultPolicy(policy =&gt; <br />        policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod().WithExposedHeaders(<span>&quot;*&quot;</span>)));<br /><br /><span>// Configure the HTTP request pipeline.</span><br /><span>var</span> app = builder.Build();<br /><br />app.UseCors();<br />app.UseAuthentication();<br />app.UseAuthorization();<br />app.UseWorkflowsApi();<br /><br />app.MapGet(<span>&quot;/&quot;</span>, () =&gt; <span>&quot;Hello World!&quot;</span>);<br />app.MapPost(<span>&quot;/write-story&quot;</span>, <span>async</span> (StoryWriterAgent agent, CancellationToken cancellationToken) =&gt; <br />    <span>await</span> agent.WriteStoryAsync(<span>&quot;A haunted lighthouse&quot;</span>, <span>&quot;thriller&quot;</span>, cancellationToken));<br /><br />app.Run();</span></pre><p>With this in place, our ASP.NET Core application now doubles as a workflow server.</p><h4>Wrapping the agent as an Elsa activity</h4><p>One option is to wrap the agent in a custom activity:</p><pre data-code-block-mode="1" spellcheck="false" data-code-block-lang="csharp"><span><span>public</span> <span>class</span> <span>WriteStory</span> : <span>CodeActivity</span>&lt;<span>string</span>&gt;<br />{<br />    <span>public</span> Input&lt;<span>string</span>&gt; Topic { <span>get</span>; <span>set</span>; } = <span>null</span>!;<br />    <span>public</span> Input&lt;<span>string</span>&gt; Genre { <span>get</span>; <span>set</span>; } = <span>null</span>!;<br />    <br />    <span><span>protected</span> <span>override</span> <span>async</span> ValueTask <span>ExecuteAsync</span>(<span>ActivityExecutionContext context</span>)</span><br />    {<br />        <span>var</span> agent = context.GetRequiredService&lt;StoryWriterAgent&gt;();<br />        <span>var</span> genre = Genre.Get(context);<br />        <span>var</span> topic = Topic.Get(context);<br />        <br />        <span>var</span> story = <span>await</span> agent.WriteStoryAsync(topic, genre, context.CancellationToken);<br />        context.SetResult(story);<br />    }<br />}</span></pre><p>This works, but the activity itself doesn’t add any new capability. It’s mostly boilerplate.</p><p>Which raises an interesting question: what if we didn’t have to write activity code at all?</p></div></div></section><section><div><div><h3>Milestone 4: Using agents as activities</h3><p>Elsa 3.6 introduces <strong>Activity Hosts</strong>, which allow public methods on regular C# classes to be exposed directly as workflow activities.</p><p>Registering the agent is as simple as:</p><pre data-code-block-mode="1" spellcheck="false" data-code-block-lang="xml"><span>elsa.AddActivityHost<span>&lt;<span>StoryWriterAgent</span>&gt;</span>();</span></pre><p>That’s it. The <code>WriteStoryAsync</code> method now shows up as an activity in Elsa Studio, with its method arguments automatically mapped to activity inputs.</p><p>This drastically lowers the friction between application code and workflow orchestration.</p><p>To see this in action, start an instance of Elsa Studio and connect it to our running application (I am running it on port 5001) using the following commands:</p><pre data-code-block-mode="1" spellcheck="false" data-code-block-lang="bash"><span>docker pull elsaworkflows/elsa-studio-blazor-wasm-app:3.6.0<br />docker run -t -i -e ASPNETCORE_ENVIRONMENT=<span>&#x27;Development&#x27;</span> -e HTTP_PORTS=8080 -e BACKEND__URL=https://localhost:5001/elsa/api -p 14000:8080 elsaworkflows/elsa-studio-blazor-wasm-app:3.6.0</span></pre><blockquote>Elsa Studio is a separate application that acts as the UI for Elsa Server and communicates with it via HTTP requests.</blockquote><p>When the container has started, navigate to <a href="http://localhost:14000:" rel="noopener" target="_blank">http://localhost:14000</a> and login with the default username and password:</p><pre data-code-block-mode="1" spellcheck="false" data-code-block-lang="makefile"><span><span>username: admin</span><br /><span>password: password</span></span></pre></div><div><figure><img data-image-id="1*xcQzlFyeui_ECHiUMVa1ug.png" data-width="2158" data-height="1398" src="https://cdn-images-1.medium.com/max/1200/1*xcQzlFyeui_ECHiUMVa1ug.png"><figcaption>Elsa Studio 3.6 Login</figcaption></figure></div><div><p>Once logged in, create a new workflow and add the <em>Write Story</em> activity to the canvas:</p></div><div><figure><img data-image-id="1*WvMheAeFhDlvx6dGlKbIFw.png" data-width="2210" data-height="1436" src="https://cdn-images-1.medium.com/max/1200/1*WvMheAeFhDlvx6dGlKbIFw.png"><figcaption>Our StoryWriterAgent’s <code><strong>WriteStory</strong></code> method made available as an activity.</figcaption></figure></div><div><p>Notice that the activity’s name is derived from the public methods exposed by the <code>StoryWriterAgent</code> class. In our example, we have one method called <code>WriteStoryAsync</code>. Notice also that the two arguments <code>topic</code> and <code>genre</code> are made available as activity input fields, instantly making our class configurable through Elsa Workflows.</p></div></div></section><section><div><div><h3>Milestone 5: Moving orchestration into Elsa</h3><p>If Elsa is already orchestrating your process, the next logical step is to let it orchestrate the agents themselves.</p><p>Instead of a single <code>StoryWriterAgent</code>, we can split responsibilities into focused agents:</p><pre data-code-block-mode="1" spellcheck="false" data-code-block-lang="kotlin"><span><span>public</span> <span>class</span> <span>WriterAgent</span> { … }<br /><span>public</span> <span>class</span> <span>EditorAgent</span> { … }</span></pre><p>These agents can be registered the same way and surfaced as workflow activities. Properties and method arguments become inputs automatically.</p><p>This is the architectural pivot point: instead of agents coordinating each other, Elsa becomes the primary orchestrator, and agents focus on doing one thing well.</p></div></div></section><section><div><div><h3>Agent Framework workflows vs Elsa workflows</h3><p>So when should you use which?</p><p>Agent Framework workflows are optimized for AI-centric orchestration. They shine when control flow is driven by model decisions, reasoning, and collaboration between agents. If AI behavior <em>is</em> the system, this is a great fit.</p><p>Elsa workflows are optimized for application orchestration. They excel at long-running, event-driven, and stateful processes with explicit control flow, persistence, and operational visibility. In this model, AI agents are participants in a larger, deterministic process.</p><p>In short: use Agent Framework when you are building an AI system, and Elsa when you are building a system that <em>uses</em> AI. They solve orchestration at different layers and complement each other naturally.</p></div></div></section><section><div><div><h3>Closing thoughts</h3><p>Microsoft Agent Framework gives .NET developers a powerful way to build cognition into their applications, with agents that have clear responsibilities, reasoning, and the ability to collaborate. Elsa provides a robust and approachable workflow engine that excels at modeling real-world processes and exposing them through a visual designer.</p><p>Agent Framework shines when orchestration itself is the intelligence.<br>Elsa shines when intelligence is one part of a larger, long-running process.</p><p>What this walkthrough shows is that you don’t have to choose. Agent Framework lets you design rich agentic capabilities, and Elsa gives you a place to put them. Together, they enable systems that are both intelligent and predictable, which becomes especially compelling for scenarios like content pipelines, approvals, and human-in-the-loop processes where intelligence and process need to evolve together.</p></div></div></section><section><div><div><p>Source code of the sample project can be found <a href="https://github.com/elsa-workflows/elsa-samples/tree/release/3.6.0/src/aspnet/Elsa.Samples.AspNet.CodeFirstAgents" rel="noopener" target="_blank">here</a>.</p></div></div></section>
+Agentic workflows are becoming a real architectural choice in .NET applications. The question is no longer whether you can call an agent from your code. You can. The harder question is where orchestration should live once that agent becomes part of a business process.
+
+Microsoft Agent Framework gives .NET developers a strong model for agent collaboration. Elsa Workflows gives them a durable model for application orchestration. In our experience, the cleanest design is often to let each tool own the layer it is best at.
+
+> **Key Takeaways**
+> - Microsoft describes Agent Framework workflows as graph-based workflows that can include agents, external integrations, human interaction, and checkpointing.
+> - Elsa Activity Hosts let public instance methods, including async methods, become workflow activities.
+> - Use Agent Framework for AI collaboration. Use Elsa for long-running, visible, stateful application processes.
+
+The sample behind this post uses three roles: a writer agent, an editor agent, and an Elsa workflow that can call the story-writing capability as an activity. The source is available in the [Elsa code-first agents sample](https://github.com/elsa-workflows/elsa-samples/tree/release/3.6.0/src/aspnet/Elsa.Samples.AspNet.CodeFirstAgents).
+
+## What Are We Building?
+
+Microsoft's workflow overview says Agent Framework workflows can model business processes that include multiple agents, external systems, human interactions, and checkpoints ([Microsoft Learn](https://learn.microsoft.com/en-us/agent-framework/workflows/index)). In this walkthrough, we keep the example small: a writer creates a story draft, an editor improves it, and Elsa decides where that capability sits in the broader process.
+
+The important design move is incremental. We start with an agent-native workflow, package it behind a normal .NET class, then expose that class to Elsa. After that, we can decide whether Elsa should call one composite agent capability or orchestrate several smaller agent activities directly.
+
+The sample moves through four stages:
+
+1. Build a Writer to Editor pipeline with Microsoft Agent Framework.
+2. Encapsulate that pipeline in `StoryWriterAgent`.
+3. Register `StoryWriterAgent` in ASP.NET Core dependency injection.
+4. Expose `WriteStoryAsync` as an Elsa activity through `AddActivityHost<StoryWriterAgent>()`.
+
+That last step matters. It lets application code stay ordinary, while Elsa provides persistence, visual modeling, API-driven workflow management, and the operational surface you need around the capability. This is similar in spirit to the design trade-offs in [reusable triggers in Elsa 3.5](/blog/reusing-triggers-in-elsa-workflows-3-5): reusable application behavior becomes easier to reason about when it has a clear boundary.
+
+## Where Should Agent Framework Own Orchestration?
+
+Microsoft's `AgentWorkflowBuilder.BuildSequential` API builds a pipeline where one agent's output becomes the next agent's input ([Microsoft Learn API reference](https://learn.microsoft.com/en-us/dotnet/api/microsoft.agents.ai.workflows.agentworkflowbuilder.buildsequential)). That is a good fit when the flow is primarily about AI collaboration: draft, critique, revise, classify, route, or hand off.
+
+In the current sample, the agent code is deliberately small. The `StoryWriterAgent` receives an `IChatClient`, turns it into two AI agents, builds a sequential workflow, runs it, and returns the generated text. The current sample uses `AsAIAgent`, `AgentWorkflowBuilder.BuildSequential`, and `workflow.AsAgent()` in [`StoryWriterAgent.cs`](https://github.com/elsa-workflows/elsa-samples/blob/release/3.6.0/src/aspnet/Elsa.Samples.AspNet.CodeFirstAgents/Agents/StoryWriterAgent.cs).
+
+```csharp
+public class StoryWriterAgent(IChatClient chatClient)
+{
+    public async Task<string> WriteStoryAsync(
+        string topic,
+        string genre,
+        CancellationToken cancellationToken = default)
+    {
+        var writer = chatClient.AsAIAgent(
+            name: "Writer",
+            instructions: "Write a short story based on the provided topic.");
+
+        var editor = chatClient.AsAIAgent(
+            name: "Editor",
+            instructions: "Improve the draft: fix grammar, improve flow, and tighten the plot.");
+
+        var workflow = AgentWorkflowBuilder.BuildSequential(writer, editor);
+        var workflowAgent = workflow.AsAgent();
+
+        var result = await workflowAgent.RunAsync(
+            $"Write a short story about {topic} in the genre of {genre}.",
+            cancellationToken: cancellationToken);
+
+        return result.Text;
+    }
+}
+```
+
+This is a sensible place for Agent Framework to own orchestration. The flow is short. The participants are agents. The value is in how the model-backed actors collaborate. If you later add a reviewer, classifier, or handoff step, it still belongs inside the agent capability as long as the surrounding application treats the result as one unit of work.
+
+## Why Put The Agent Behind A Plain .NET Class?
+
+The official Agent Framework workflow builder page describes workflows as directed graphs that coordinate executor invocation, message routing, and event streaming ([Microsoft Learn](https://learn.microsoft.com/en-us/agent-framework/workflows/workflows)). That is useful, but your application should not have to know those internals every time it needs a story. A plain class gives the rest of the system one stable method to call.
+
+That boundary pays off quickly:
+
+- Controllers can call `StoryWriterAgent` directly.
+- Background services can call it without depending on Elsa.
+- Tests can replace `IChatClient` or the whole agent service.
+- Elsa can expose the method as an activity without a hand-written activity wrapper.
+
+This is the same discipline you would apply to any integration. The AI part should not force the whole application to become agent-shaped. Keep the capability behind a focused service, then decide which orchestration layer should call it.
+
+The sample registers the class as a singleton:
+
+```csharp
+services.AddOpenAIChatClient("gpt-4o", openApiKey);
+services.AddSingleton<StoryWriterAgent>();
+```
+
+From there, a normal Minimal API endpoint can invoke it:
+
+```csharp
+app.MapPost(
+    "/write-story",
+    async (StoryWriterAgent agent, CancellationToken cancellationToken) =>
+        await agent.WriteStoryAsync("A haunted lighthouse", "thriller", cancellationToken));
+```
+
+At this point, Elsa is not required. That is intentional. If the only thing you need is an HTTP endpoint that calls an agent workflow, keep it simple.
+
+## How Do Elsa Activity Hosts Change The Integration?
+
+Elsa's Activity Host API registers a host type through workflow management by adding it to `HostMethodActivitiesOptions` in the Elsa core source. Component tests verify that public instance methods are registered as activities, while static methods are excluded, and async methods can expose inputs and outputs. That gives `StoryWriterAgent.WriteStoryAsync` a direct path into Elsa Studio.
+
+The sample registers the host in [`Program.cs`](https://github.com/elsa-workflows/elsa-samples/blob/release/3.6.0/src/aspnet/Elsa.Samples.AspNet.CodeFirstAgents/Program.cs):
+
+```csharp
+builder.Services.AddElsa(elsa =>
+{
+    elsa.UseWorkflowManagement(management =>
+    {
+        management.UseEntityFrameworkCore(ef => ef.UseSqlite());
+        management.UseCache();
+    });
+
+    elsa.UseWorkflowRuntime(runtime =>
+    {
+        runtime.UseDistributedRuntime();
+        runtime.UseEntityFrameworkCore(ef => ef.UseSqlite());
+        runtime.UseCache();
+    });
+
+    elsa.UseWorkflowsApi();
+    elsa.AddActivityHost<StoryWriterAgent>();
+    elsa.UseDefaultAuthentication();
+});
+```
+
+That one registration changes how the application can be composed. `WriteStoryAsync` becomes an activity. Its `topic` and `genre` arguments become configurable inputs. The returned `string` becomes the activity result.
+
+![Elsa Studio showing the generated Write Story activity](https://cdn-images-1.medium.com/max/1200/1*WvMheAeFhDlvx6dGlKbIFw.png)
+
+There is no separate `WriteStory : CodeActivity<string>` class in this path. You can still write custom activities when you need fine-grained metadata, custom execution behavior, bookmarks, or designer-specific options. But for many service methods, Activity Hosts remove a layer of mechanical code.
+
+If you are already organizing Elsa through shell-level features, the same idea composes well with [configuring Elsa with shell features](/blog/configuring-elsa-with-shell-features): register the agent capability where the feature lives, and let the shell decide which activities belong in that runtime.
+
+## When Should Elsa Become The Primary Orchestrator?
+
+Agent Framework workflows and Elsa workflows solve different problems. Microsoft's workflow docs describe Agent Framework workflows as supporting graph control flow, checkpointing, multi-agent orchestration, and human-in-the-loop patterns. Elsa focuses on long-running application workflows: triggers, bookmarks, persistence, explicit activity graphs, runtime APIs, and Studio visibility.
+
+The practical rule is simple: use Agent Framework when the flow is inside the AI capability, and use Elsa when the AI capability is one step in a larger business process.
+
+For example, keep orchestration inside Agent Framework when you need:
+
+- A writer, editor, and reviewer agent to collaborate on one answer.
+- A classifier agent to route work to specialized agents.
+- An agent pipeline that returns one result to the application.
+
+Move orchestration into Elsa when you need:
+
+- A human approval step after the agent produces content.
+- A durable process that resumes after minutes, days, or external events.
+- Operational visibility over retries, failures, incidents, and state.
+- A workflow that mixes AI with HTTP calls, timers, user tasks, secrets, logs, and domain services.
+
+That distinction becomes more important as workflows grow. Elsa 3.8, for example, adds operational features such as [structured logs](/blog/structured-logs-in-elsa-3-8), [console logs](/blog/console-logs-in-elsa-3-8), [OpenTelemetry diagnostics](/blog/opentelemetry-diagnostics-in-elsa-3-8), and [workflow alterations](/blog/workflow-alterations-in-elsa-3-8). Those are application workflow concerns. They help teams operate a process, not just get one AI answer.
+
+## What Does The Split Look Like In Practice?
+
+Start with one composite activity when the agent collaboration is an implementation detail. A workflow designer sees "Write Story", provides a topic and genre, and receives a result. That is enough for content generation, draft creation, enrichment, and similar steps.
+
+Split the agents into separate activities when business users need to control the process around them. For example, you might expose:
+
+```csharp
+public class WriterAgent
+{
+    public Task<string> WriteDraftAsync(string topic, string genre, CancellationToken cancellationToken);
+}
+
+public class EditorAgent
+{
+    public Task<string> EditDraftAsync(string draft, CancellationToken cancellationToken);
+}
+```
+
+Then Elsa can place a review activity between writing and editing. It can branch based on human feedback. It can send the draft to a moderation API before the editor runs. It can retry only the failed step.
+
+That is the architectural pivot point. Once each agent is a workflow activity, Elsa owns the process and the agents own their narrow capability. This usually makes the system easier to operate because every step has an explicit place in the workflow graph.
+
+![Elsa Studio login screen for the sample](https://cdn-images-1.medium.com/max/1200/1*xcQzlFyeui_ECHiUMVa1ug.png)
+
+## Agent Framework Workflows Vs Elsa Workflows
+
+The two workflow models are complementary, not competing. Microsoft Agent Framework is a good fit for AI-centric orchestration because its workflows can treat agents as first-class participants and compose them into reusable patterns. Elsa is a good fit for application orchestration because it models durable, event-driven, observable processes.
+
+Use this table as a starting point:
+
+| Question | Prefer Agent Framework | Prefer Elsa Workflows |
+| --- | --- | --- |
+| What owns the flow? | Agent collaboration | Business process |
+| What changes often? | Prompts, model behavior, agent routing | Process rules, approvals, integrations |
+| What needs visibility? | Agent events and output | Workflow state, incidents, logs, retries |
+| What is the unit of reuse? | Agent or agent workflow | Activity, trigger, workflow definition |
+| What is the failure model? | Retry or adjust the AI task | Resume, compensate, alter, or retry process steps |
+
+The split is not always obvious at the start. That is fine. A good default is to hide agent collaboration behind a plain .NET method first. If the surrounding process later needs more control, split the capability into smaller Activity Hosts and let Elsa orchestrate them.
+
+## FAQ
+
+### Do I need Elsa to use Microsoft Agent Framework?
+
+No. If your application only needs to call an agent workflow and return a result, a controller, Minimal API endpoint, or background service is enough. Add Elsa when the agent sits inside a longer process that needs persistence, visual modeling, retries, events, or human approval.
+
+### Do I need a custom Elsa activity for every agent?
+
+No. Activity Hosts can expose public methods on regular .NET classes as activities. A custom `CodeActivity` still makes sense when you need custom metadata, designer behavior, bookmarks, or low-level workflow control, but simple service methods can usually stay as service methods.
+
+### Should Elsa orchestrate every agent individually?
+
+Not by default. If the writer and editor agents form one cohesive capability, expose one `WriteStoryAsync` activity. Split them only when the workflow itself needs to place business steps between them, such as approval, moderation, enrichment, or escalation.
+
+## Closing Thoughts
+
+The best part of this integration is that it does not force a false choice. Microsoft Agent Framework gives .NET developers a way to build agentic capabilities. Elsa gives those capabilities a durable place in a real workflow system.
+
+Keep the boundary explicit. Let Agent Framework handle agent collaboration. Let Elsa handle the business process around it. When you do that, you get systems that can be intelligent without becoming opaque, and operational without burying the AI work behind boilerplate.
+
+The complete sample is available in the [Elsa Workflows samples repository](https://github.com/elsa-workflows/elsa-samples/tree/release/3.6.0/src/aspnet/Elsa.Samples.AspNet.CodeFirstAgents).

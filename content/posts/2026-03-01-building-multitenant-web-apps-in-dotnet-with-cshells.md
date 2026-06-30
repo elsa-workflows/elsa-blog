@@ -1,9 +1,9 @@
 ---
 title: "Building Multitenant Web Apps in .NET with CShells"
 slug: "building-multitenant-web-apps-in-dotnet-with-cshells"
-description: "Modeling multitenancy through container isolation instead of runtime conditionals"
+description: "Model multitenancy in .NET through isolated shells, feature composition, and per-tenant service containers instead of scattered runtime checks."
 publishedAt: "2026-03-01"
-updatedAt: null
+updatedAt: "2026-06-30"
 status: "published"
 authors:
   - "sipke"
@@ -11,13 +11,292 @@ category: "Engineering"
 tags:
   - "dotnet"
   - "multitenancy"
+  - "cshells"
 featuredImage: "https://cdn-images-1.medium.com/max/800/1*_DV5XBtHU1P9L5iYYBeC8A.jpeg"
 featuredImageAlt: "Building Multitenant Web Apps in .NET with CShells"
 sourceName: "Medium"
 sourceUrl: "https://medium.com/@sipkeschoorstra/building-multitenant-web-apps-in-net-with-cshells-5e36fb923d77"
 seoTitle: "Building Multitenant Web Apps in .NET with CShells"
-seoDescription: "Modeling multitenancy through container isolation instead of runtime conditionals"
+seoDescription: "Build multitenant .NET apps with CShells by composing isolated shells, feature-specific services, and path-based tenant routing."
 redirectFrom: []
 ---
 
-<section><div><div><h3>Building Multitenant Web Apps in .NET with CShells</h3><h4>Modeling multitenancy through container isolation instead of runtime conditionals</h4><figure><img data-image-id="1*_DV5XBtHU1P9L5iYYBeC8A.jpeg" data-width="1280" data-height="720" src="https://cdn-images-1.medium.com/max/800/1*_DV5XBtHU1P9L5iYYBeC8A.jpeg"></figure><p>Multitenancy raises a structural question: where does tenant-specific behavior live?</p><p>Different tenants may require different features or configuration. One enables comments. Another enables analytics with different limits. A third integrates with an external system that the others do not. These differences must be represented somewhere in the system.</p><p>There are two fundamentally different ways to model this:</p><ol><li><strong>Runtime variation</strong>: services inspect tenant identity and branch.</li><li><strong>Structural variation</strong>: tenants are isolated, and differences are expressed by composition.</li></ol><p>In the first model, tenant identity flows through the application as data. In the second, tenant identity determines how the system is constructed.</p><p><a href="https://www.cshells.io/" rel="noopener" target="_blank">CShells</a> implements the second model.</p><p>Each tenant is modeled as a shell — an isolated execution context with its own <code>IServiceProvider</code>, its own <code>IConfiguration</code>, and its own set of enabled features. Features register services and optionally expose endpoints. Shells enable features through configuration.</p><p>To demonstrate how this works, this article builds a small blog platform:</p><ul><li>Default: <code>Core</code>, <code>Posts</code></li><li>Acme: <code>Core</code>, <code>Posts</code>, <code>Comments</code></li><li>Contoso: <code>Core</code>, <code>Posts</code>, <code>Comments</code>, <code>Analytics</code> under <code>/contoso/*</code></li></ul><p>Behavioral differences are expressed by enabling or disabling features per shell.</p></div></div></section><section><div><div><h3>Architectural Model</h3><h3>Shell</h3><p>A shell represents an application boundary inside a larger host process.</p><p>Each shell has:</p><ul><li>Its own <code>IServiceProvider</code></li><li>Its own <code>IConfiguration</code></li><li>A defined set of enabled features</li></ul><p>When the application starts, CShells builds a separate dependency injection container for each shell. Service registrations are therefore isolated. A service registered in one shell does not exist in another.</p><p>From the perspective of application code, there is no concept of “current tenant ID” being passed around. Code resolves services from the container, and the container itself encodes tenant differences.</p><h3>Feature</h3><p>A feature is a modular unit of behavior. It implements:</p><ul><li><code>IShellFeature</code> (service registration)</li><li><code>IWebShellFeature</code> (service registration + endpoint mapping)</li></ul><p>Features are discovered via <code>[ShellFeature]</code> and may declare dependencies using <code>DependsOn</code>.</p><p>A feature does not know which tenants use it. It only defines services and endpoints. Whether it is active depends entirely on shell configuration.</p><p>This separation allows features to be composed declaratively rather than conditionally.</p></div></div></section><section><div><div><h3>Structure</h3><p>Install packages:</p><pre data-code-block-mode="1" spellcheck="false" data-code-block-lang="csharp"><span>dotnet <span>add</span> package CShells<br />dotnet <span>add</span> package CShells.AspNetCore</span></pre><p>Typical layout:</p><pre data-code-block-mode="1" spellcheck="false" data-code-block-lang="css"><span>YourSolution/<br />├── <span>src</span>/<br />│   ├── YourApp/<br />│   └── YourApp<span>.Features</span>/</span></pre><p>The feature project references <code>CShells.AspNetCore.Abstractions</code>. The host references <code>CShells</code> and <code>CShells.AspNetCore</code>.</p><p>Feature assemblies remain independent from host concerns.</p></div></div></section><section><div><div><h3>Core Feature</h3><p>Registers tenant metadata and exposes a root endpoint.</p><pre data-code-block-mode="1" spellcheck="false" data-code-block-lang="csharp"><span>[<span>ShellFeature(<span>&quot;Core&quot;</span>)</span>]<br /><span>public</span> <span>class</span> <span>CoreFeature</span> : <span>IWebShellFeature</span><br />{<br />    <span><span>public</span> <span>void</span> <span>ConfigureServices</span>(<span>IServiceCollection services</span>)</span><br />    {<br />        services.AddSingleton&lt;ITenantInfo&gt;(sp =&gt;<br />        {<br />            <span>var</span> settings = sp.GetRequiredService&lt;ShellSettings&gt;();<br />            <span>var</span> config   = sp.GetRequiredService&lt;IConfiguration&gt;();<br /><br />            <span>return</span> <span>new</span> TenantInfo<br />            {<br />                TenantId   = settings.Id.ToString(),<br />                TenantName = settings.Id.Name,<br />                Plan       = config[<span>&quot;Plan&quot;</span>] ?? <span>&quot;Free&quot;</span><br />            };<br />        });<br />    }<br /><br />    <span><span>public</span> <span>void</span> <span>MapEndpoints</span>(<span>IEndpointRouteBuilder endpoints, IHostEnvironment? environment</span>)</span><br />    {<br />        endpoints.MapGet(<span>&quot;/&quot;</span>, (ITenantInfo tenant, ShellSettings settings) =&gt;<br />            Results.Ok(<span>new</span><br />            {<br />                tenant   = tenant.TenantName,<br />                plan     = tenant.Plan,<br />                features = settings.EnabledFeatures<br />            }));<br />    }<br />}</span></pre><p>Each shell resolves its own <code>ShellSettings</code> and configuration values.</p></div></div></section><section><div><div><h3>Posts</h3><pre data-code-block-mode="1" spellcheck="false" data-code-block-lang="csharp"><span>[<span>ShellFeature(<span>&quot;Posts&quot;</span>, DependsOn = [<span>&quot;Core&quot;</span></span>])]<br /><span>public</span> <span>class</span> <span>PostsFeature</span> : <span>IWebShellFeature</span><br />{<br />    <span><span>public</span> <span>void</span> <span>ConfigureServices</span>(<span>IServiceCollection services</span>)</span><br />    {<br />        services.AddSingleton&lt;IPostRepository, InMemoryPostRepository&gt;();<br />        services.AddSingleton&lt;IShellActivatedHandler, SeedPostsHandler&gt;();<br />    }<br /><br />    <span><span>public</span> <span>void</span> <span>MapEndpoints</span>(<span>IEndpointRouteBuilder endpoints, IHostEnvironment? environment</span>)</span><br />    {<br />        endpoints.MapGet(<span>&quot;/posts&quot;</span>,<br />            (IPostRepository repo, ITenantInfo tenant) =&gt;<br />                Results.Ok(<span>new</span> { tenant = tenant.TenantName, posts = repo.GetAll() }));<br />        <br />        endpoints.MapPost(<span>&quot;/posts&quot;</span>,<br />            <span>async</span> (HttpContext ctx, IPostRepository repo) =&gt;<br />            {<br />                <span>var</span> req = <span>await</span> ctx.Request.ReadFromJsonAsync&lt;CreatePostRequest&gt;();<br />                <span>if</span> (req <span>is</span> <span>null</span>) <span>return</span> Results.BadRequest();<br />                <span>var</span> post = repo.Add(req.Title, req.Body, req.Author);<br />                <span>return</span> Results.Created(<span>$&quot;posts/<span>{post.Id}</span>&quot;</span>, post);<br />            });<br />    }<br />}</span></pre><p>Each shell receives its own repository instance. No tenant branching is required.</p><pre data-code-block-mode="1" spellcheck="false" data-code-block-lang="csharp"><span><span><span>public</span> <span>class</span> <span>SeedPostsHandler</span>(<span>IPostRepository repo, ITenantInfo tenant</span>)<br />    : IShellActivatedHandler</span><br />{<br />    <span><span>public</span> Task <span>OnActivatedAsync</span>(<span>CancellationToken _</span>)</span><br />    {<br />        repo.Add(<span>$&quot;Welcome to <span>{tenant.TenantName}</span>&quot;</span>,<br />                 <span>$&quot;Plan: <span>{tenant.Plan}</span>&quot;</span>,<br />                 <span>&quot;System&quot;</span>);<br />        <span>return</span> Task.CompletedTask;<br />    }<br />}</span></pre></div></div></section><section><div><div><h3>Comments</h3><pre data-code-block-mode="1" spellcheck="false" data-code-block-lang="csharp"><span>[<span>ShellFeature(<span>&quot;Comments&quot;</span>, DependsOn = [<span>&quot;Posts&quot;</span></span>])]<br /><span>public</span> <span>class</span> <span>CommentsFeature</span> : <span>IWebShellFeature</span><br />{<br />    <span><span>public</span> <span>void</span> <span>ConfigureServices</span>(<span>IServiceCollection services</span>)</span><br />        =&gt; services.AddSingleton&lt;ICommentRepository, InMemoryCommentRepository&gt;();<br /><br />    <span><span>public</span> <span>void</span> <span>MapEndpoints</span>(<span>IEndpointRouteBuilder endpoints, IHostEnvironment? environment</span>)</span><br />    {<br />        endpoints.MapGet(<span>&quot;/posts/{id:int}/comments&quot;</span>,<br />            (<span>int</span> id, ICommentRepository repo) =&gt;<br />                Results.Ok(repo.GetByPostId(id)));<br />    }<br />}</span></pre><p>If a shell does not enable <code>Comments</code>, neither its services nor its routes exist.</p></div></div></section><section><div><div><h3>Analytics</h3><pre data-code-block-mode="1" spellcheck="false" data-code-block-lang="typescript"><span>[<span>ShellFeature</span>(<span>&quot;Analytics&quot;</span>, <span>DependsOn</span> = [<span>&quot;Posts&quot;</span>])]<br /><span>public</span> <span>class</span> <span>AnalyticsFeature</span> : <span>IWebShellFeature</span><br />{<br />    <span>public</span> <span>void</span> <span>ConfigureServices</span>(<span>IServiceCollection</span> services)<br />    {<br />        services.<span>AddOptions</span>&lt;<span>AnalyticsOptions</span>&gt;()<br />            .<span>Configure</span>&lt;<span>IConfiguration</span>&gt;(<span>(<span>opts, config</span>) =&gt;</span><br />                config.<span>GetSection</span>(<span>&quot;Analytics&quot;</span>).<span>Bind</span>(opts));<br /><br />        services.<span>AddSingleton</span>&lt;<span>IAnalyticsService</span>, <span>InMemoryAnalyticsService</span>&gt;();<br />    }<br /><br />    <span>public</span> <span>void</span> <span>MapEndpoints</span>(<span>IEndpointRouteBuilder</span> endpoints, <span>IHostEnvironment</span>? environment)<br />    {<br />        endpoints.<span>MapGet</span>(<span>&quot;/analytics&quot;</span>,<br />            <span>(<span>IAnalyticsService analytics,<br />             IOptions&lt;AnalyticsOptions&gt; options</span>) =&gt;</span><br />            {<br />                <span>var</span> top = analytics.<span>GetViewCounts</span>()<br />                    .<span>OrderByDescending</span>(<span><span>kv</span> =&gt;</span> kv.<span>Value</span>)<br />                    .<span>Take</span>(options.<span>Value</span>.<span>TopPostsCount</span>);<br />                <span>return</span> <span>Results</span>.<span>Ok</span>(top);<br />            });<br />    }<br />}</span></pre><p>Options are bound per shell from that shell’s configuration.</p></div></div></section><section><div><div><h3>Configuration</h3><p>Shells are defined under the <code>CShells</code> section:</p><pre data-code-block-mode="1" spellcheck="false" data-code-block-lang="json"><span><span>{</span><br />  <span>&quot;CShells&quot;</span><span>:</span> <span>{</span><br />    <span>&quot;Shells&quot;</span><span>:</span> <span>[</span><br />      <span>{</span><br />        <span>&quot;Name&quot;</span><span>:</span> <span>&quot;Default&quot;</span><span>,</span><br />        <span>&quot;Features&quot;</span><span>:</span> <span>[</span> <span>&quot;Core&quot;</span><span>,</span> <span>&quot;Posts&quot;</span> <span>]</span><span>,</span><br />        <span>&quot;Configuration&quot;</span><span>:</span> <span>{</span><br />          <span>&quot;WebRouting:Path&quot;</span><span>:</span> <span>&quot;&quot;</span><span>,</span><br />          <span>&quot;Plan&quot;</span><span>:</span> <span>&quot;Free&quot;</span><br />        <span>}</span><br />      <span>}</span><span>,</span><br />      <span>{</span><br />        <span>&quot;Name&quot;</span><span>:</span> <span>&quot;Acme&quot;</span><span>,</span><br />        <span>&quot;Features&quot;</span><span>:</span> <span>[</span> <span>&quot;Core&quot;</span><span>,</span> <span>&quot;Posts&quot;</span><span>,</span> <span>&quot;Comments&quot;</span> <span>]</span><span>,</span><br />        <span>&quot;Configuration&quot;</span><span>:</span> <span>{</span><br />          <span>&quot;WebRouting:Path&quot;</span><span>:</span> <span>&quot;acme&quot;</span><span>,</span><br />          <span>&quot;Plan&quot;</span><span>:</span> <span>&quot;Pro&quot;</span><br />        <span>}</span><br />      <span>}</span><span>,</span><br />      <span>{</span><br />        <span>&quot;Name&quot;</span><span>:</span> <span>&quot;Contoso&quot;</span><span>,</span><br />        <span>&quot;Features&quot;</span><span>:</span> <span>[</span><br />          <span>&quot;Core&quot;</span><span>,</span><br />          <span>&quot;Posts&quot;</span><span>,</span><br />          <span>&quot;Comments&quot;</span><span>,</span><br />          <span>{</span> <span>&quot;Name&quot;</span><span>:</span> <span>&quot;Analytics&quot;</span><span>,</span> <span>&quot;TopPostsCount&quot;</span><span>:</span> <span>10</span> <span>}</span><br />        <span>]</span><span>,</span><br />        <span>&quot;Configuration&quot;</span><span>:</span> <span>{</span><br />          <span>&quot;WebRouting:Path&quot;</span><span>:</span> <span>&quot;contoso&quot;</span><span>,</span><br />          <span>&quot;Plan&quot;</span><span>:</span> <span>&quot;Enterprise&quot;</span><br />        <span>}</span><br />      <span>}</span><br />    <span>]</span><br />  <span>}</span><br /><span>}</span></span></pre><p>Each shell receives its own <code>IConfiguration</code> instance derived from this configuration data. Feature objects defined inline (e.g., <code>Analytics</code>) contribute their values to that shell’s configuration.</p></div></div></section><section><div><div><h3>Host</h3><pre data-code-block-mode="1" spellcheck="false" data-code-block-lang="csharp"><span><span>var</span> builder = WebApplication.CreateBuilder(args);<br /><br />builder.AddShells([<span>typeof</span>(CoreFeature)]);<br /><span>var</span> app = builder.Build();<br />app.UseRouting();<br />app.MapShells();<br />app.Run();</span></pre><p><code>AddShells</code> discovers features and loads shells. <code>MapShells</code> resolves the active shell per request and mounts endpoints accordingly.</p></div></div></section><section><div><div><h3>Summary</h3><p>CShells models multitenancy as structural isolation:</p><ul><li>Each shell has its own container and configuration.</li><li>Services and endpoints exist only if their feature is enabled.</li><li>Differences are expressed declaratively in configuration.</li><li>Tenant identity does not flow through domain logic.</li></ul><p>The full sample is available under <code>samples/CShells.Workbench</code>.</p></div></div></section>
+Multitenancy raises a structural question: where should tenant-specific behavior live?
+
+The usual answer is runtime variation. A service receives a tenant ID, checks which tenant is active, then branches. That works for a while. But the conditionals spread, tests get wider, and the tenant model leaks into code that should not care.
+
+CShells takes the other path. It models each tenant as a shell: an isolated execution context with its own services, configuration, and enabled features. The difference is subtle, but it changes the design. Instead of asking "which tenant am I handling?" inside every service, you let the shell decide which services and endpoints exist.
+
+![Abstract multitenant application architecture with isolated runtime shells](https://cdn-images-1.medium.com/max/800/1*_DV5XBtHU1P9L5iYYBeC8A.jpeg)
+
+> **Key Takeaways**
+> - **CShells shells** are isolated application contexts with their own service provider, configuration, and enabled features.
+> - **CShells features** package services and endpoints, then shells opt into them through configuration.
+> - Current CShells configuration uses a `CShells:Shells` map, where each shell has a `Features` map and optional `Configuration`.
+
+This post builds a small blog platform with three shells:
+
+- `Default`: `Core` and `Posts`
+- `Acme`: `Core`, `Posts`, and `Comments`
+- `Contoso`: `Core`, `Posts`, `Comments`, and `Analytics`
+
+The goal is not a full SaaS app. It is a clearer mental model for .NET multitenancy, especially if you already think in modular systems like [building modular .NET applications with CShells](/blog/building-modular-dotnet-applications-with-cshells) or [configuring Elsa with shell features](/blog/configuring-elsa-with-shell-features).
+
+## What Is A Shell In CShells?
+
+The CShells docs define a shell as a configured application context with a name, enabled features, and optional shell-specific configuration ([Configuring Shells](https://github.com/sfmskywalker/cshells/blob/main/wiki/Configuring-Shells.md)). In practice, that means each tenant can receive a different dependency injection graph without pushing tenant checks into domain services.
+
+A shell gives you three boundaries:
+
+- A dedicated `IServiceProvider`
+- A dedicated `IConfiguration`
+- A declared list of enabled features
+
+That is the key design shift. Tenant identity is not just data flowing through requests. Tenant identity decides how a runtime gets constructed.
+
+In our experience, this boundary is where multitenant code either stays clear or starts to sprawl. The CShells tests verify the isolation behavior directly: when middleware resolves a shell, `HttpContext.RequestServices` changes to a scope from that shell rather than the original host provider. That means a request for Acme resolves Acme services, and a request for Contoso resolves Contoso services.
+
+## What Is A Feature In CShells?
+
+The CShells feature docs show two core shapes: `IShellFeature` for service registration and `IWebShellFeature` for services plus endpoint mapping ([Creating Features](https://github.com/sfmskywalker/cshells/blob/main/wiki/Creating-Features.md)). A feature should not know which tenants use it. It should only describe what it contributes.
+
+For web applications, `IWebShellFeature` is the workhorse:
+
+```csharp
+using CShells.AspNetCore.Features;
+using CShells.Features;
+using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+
+[ShellFeature("Core")]
+public class CoreFeature : IWebShellFeature
+{
+    public void ConfigureServices(IServiceCollection services)
+    {
+        services.AddSingleton<ITenantInfo>(sp =>
+        {
+            var configuration = sp.GetRequiredService<IConfiguration>();
+
+            return new TenantInfo
+            {
+                Name = configuration["Tenant:Name"] ?? "Default",
+                Plan = configuration["Tenant:Plan"] ?? "Free"
+            };
+        });
+    }
+
+    public void MapEndpoints(IEndpointRouteBuilder endpoints, IHostEnvironment? environment)
+    {
+        endpoints.MapGet("/", (ITenantInfo tenant) =>
+            Results.Ok(new { tenant.Name, tenant.Plan }));
+    }
+}
+```
+
+The `[ShellFeature]` attribute sets a stable feature name and can declare dependencies. Without the attribute, CShells derives the feature name from the class name. That is useful for small projects, but explicit names tend to be easier to read in tenant configuration.
+
+## How Do You Add Tenant-Specific Features?
+
+CShells lets each shell enable a different feature set. The current configuration format uses a map under `CShells:Shells`, and feature entries can be empty objects or objects with settings. CShells tests round-trip this shape and preserve both the shell keys and feature settings.
+
+Here is a small posts feature:
+
+```csharp
+[ShellFeature("Posts", DependsOn = ["Core"])]
+public class PostsFeature : IWebShellFeature
+{
+    public void ConfigureServices(IServiceCollection services)
+    {
+        services.AddSingleton<IPostRepository, InMemoryPostRepository>();
+    }
+
+    public void MapEndpoints(IEndpointRouteBuilder endpoints, IHostEnvironment? environment)
+    {
+        endpoints.MapGet("/posts", (IPostRepository posts, ITenantInfo tenant) =>
+            Results.Ok(new { tenant = tenant.Name, posts = posts.GetAll() }));
+    }
+}
+```
+
+Because services are registered per shell, each tenant gets its own repository instance in this example. There is no `if (tenant == "Acme")` branch in the repository. The container already encodes the tenant boundary.
+
+Now add a feature that only some tenants should receive:
+
+```csharp
+[ShellFeature("Comments", DependsOn = ["Posts"])]
+public class CommentsFeature : IWebShellFeature
+{
+    public void ConfigureServices(IServiceCollection services)
+    {
+        services.AddSingleton<ICommentRepository, InMemoryCommentRepository>();
+    }
+
+    public void MapEndpoints(IEndpointRouteBuilder endpoints, IHostEnvironment? environment)
+    {
+        endpoints.MapGet(
+            "/posts/{id:int}/comments",
+            (int id, ICommentRepository comments) => Results.Ok(comments.GetByPostId(id)));
+    }
+}
+```
+
+If a shell does not enable `Comments`, its service and endpoint do not exist for that shell. That is the practical benefit: missing capability becomes a composition fact, not a runtime branch.
+
+## How Does Per-Shell Configuration Work?
+
+CShells reads from the `CShells` section by default, and the docs show shells as named entries under `Shells` ([Getting Started](https://github.com/sfmskywalker/cshells/blob/main/wiki/Getting-Started.md)). Each shell can define `Features` and `Configuration`. The `Configuration` object becomes part of that shell's own `IConfiguration`.
+
+This example defines path-based tenants:
+
+```json
+{
+  "CShells": {
+    "Shells": {
+      "Default": {
+        "Features": {
+          "Core": {},
+          "Posts": {}
+        },
+        "Configuration": {
+          "Tenant": {
+            "Name": "Default",
+            "Plan": "Free"
+          },
+          "WebRouting": {
+            "Path": ""
+          }
+        }
+      },
+      "Acme": {
+        "Features": {
+          "Core": {},
+          "Posts": {},
+          "Comments": {}
+        },
+        "Configuration": {
+          "Tenant": {
+            "Name": "Acme",
+            "Plan": "Pro"
+          },
+          "WebRouting": {
+            "Path": "acme"
+          }
+        }
+      },
+      "Contoso": {
+        "Features": {
+          "Core": {},
+          "Posts": {},
+          "Comments": {},
+          "Analytics": {
+            "TopPostsCount": 10
+          }
+        },
+        "Configuration": {
+          "Tenant": {
+            "Name": "Contoso",
+            "Plan": "Enterprise"
+          },
+          "WebRouting": {
+            "Path": "contoso"
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+The `Analytics` entry shows feature-specific settings. CShells preserves those values with the feature entry, so a feature can bind its own options while the shell still controls whether the feature is active.
+
+## How Does Routing Pick The Right Shell?
+
+CShells registers `WebRoutingShellResolver` through `AddShells()`, and the shell-resolution docs say it supports path, host, header, and claim-based routing out of the box ([Shell Resolution](https://github.com/sfmskywalker/cshells/blob/main/wiki/Shell-Resolution.md)). For the example above, path routing is enough.
+
+Requests resolve like this:
+
+| Request path | Shell |
+| --- | --- |
+| `/` | `Default` |
+| `/acme/` | `Acme` |
+| `/contoso/` | `Contoso` |
+
+The CShells end-to-end tests cover exactly this shape, including `/`, `/acme/`, and `/contoso/` resolving to the expected shell names. The docs also note that endpoints registered by `IWebShellFeature` are automatically prefixed with the shell's `WebRouting:Path` and optional `WebRouting:RoutePrefix`.
+
+That means the same feature endpoint can be exposed under different tenant paths without rewriting the feature:
+
+- `Default` posts: `/posts`
+- `Acme` posts: `/acme/posts`
+- `Contoso` posts: `/contoso/posts`
+
+The feature code stays the same. Routing and service resolution do the tenant-specific work.
+
+## What Does Program.cs Need?
+
+The minimal host setup is deliberately small. Install the runtime packages in the host project:
+
+```bash
+dotnet add package CShells
+dotnet add package CShells.AspNetCore
+```
+
+Keep feature definitions in a separate project when the application grows. The CShells docs recommend a feature library that references `CShells.AspNetCore.Abstractions`, while the host references `CShells`, `CShells.AspNetCore`, and the feature library.
+
+Then register and map shells:
+
+```csharp
+var builder = WebApplication.CreateBuilder(args);
+
+builder.AddShells();
+
+var app = builder.Build();
+
+app.UseRouting();
+app.MapShells();
+
+app.Run();
+```
+
+`AddShells()` reads the `CShells` section and registers shell infrastructure. `MapShells()` adds shell middleware and dynamic shell endpoints. The integration docs call out one important ordering rule: register host routes before `MapShells()` when host routes should take priority ([Integration Patterns](https://github.com/sfmskywalker/cshells/blob/main/wiki/Integration-Patterns.md)).
+
+## When Is This Better Than Tenant Checks?
+
+Use shell composition when tenant differences are structural. If one tenant has analytics, another has comments, and another has a custom integration, those are feature differences. Model them as features and let each shell opt in.
+
+Tenant checks are still fine for simple data choices, such as a display label or a retention period. But they become expensive when they control service registrations, endpoints, background work, or external integrations. At that point, conditionals hide architecture inside implementation details.
+
+Shell composition is usually a better fit when:
+
+- Different tenants need different services.
+- Different tenants expose different routes.
+- Features should be tested independently.
+- Tenant configuration should drive runtime composition.
+- You want tenant behavior to be visible in configuration.
+
+This same boundary shows up in Elsa work as well. In [configuring Elsa with shell features](/blog/configuring-elsa-with-shell-features), features decide which Elsa capabilities belong in a shell. The principle is the same: compose the runtime explicitly, then keep application code focused.
+
+## FAQ
+
+### Is CShells only for SaaS multitenancy?
+
+No. SaaS multitenancy is a natural fit, but shells can represent any isolated runtime slice: customers, regions, modules, deployment lanes, or branded portals. The useful part is the same in each case: a shell gets its own services, configuration, and enabled features.
+
+### Do all tenants need the same endpoints?
+
+No. Endpoints come from enabled web features. If `Comments` is disabled for `Default`, the comments routes are not registered for that shell. If `Contoso` enables `Analytics`, its analytics endpoint can exist under `/contoso` without existing under `/acme`.
+
+### Should every tenant get a separate process?
+
+Not necessarily. CShells models isolation inside a host process. That is useful when tenants need separate composition but can share deployment infrastructure. If you need process, network, or database isolation for compliance reasons, CShells can still help organize application composition, but it does not replace those deployment boundaries.
+
+## Summary
+
+CShells models multitenancy as structural composition:
+
+- Shells isolate services and configuration.
+- Features package behavior.
+- Configuration declares which shell gets which features.
+- Routing selects the shell before application code runs.
+
+That design keeps tenant differences close to the runtime boundary. It also keeps domain code cleaner. Instead of asking every service to understand multitenancy, build the right shell and let ordinary dependency injection do the rest.

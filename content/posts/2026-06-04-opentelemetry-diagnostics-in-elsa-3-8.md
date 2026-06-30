@@ -1,9 +1,9 @@
 ---
-title: "OpenTelemetry Diagnostics in Elsa 3.8"
+title: "OpenTelemetry Diagnostics in Elsa 3.8: Local OTLP Viewer"
 slug: "opentelemetry-diagnostics-in-elsa-3-8"
-description: "A deeper look at Elsa 3.8 OpenTelemetry diagnostics, including workflow instrumentation, OTLP ingestion, local diagnostics storage, and the Studio viewer."
+description: "Elsa 3.8 OpenTelemetry diagnostics receive recent OTLP traces, metrics, logs, and resources into a bounded local store for Studio inspection."
 publishedAt: "2026-06-04"
-updatedAt: null
+updatedAt: "2026-06-30"
 status: "published"
 authors:
   - "sipke"
@@ -15,32 +15,33 @@ tags:
   - "observability"
 featuredImage: "../assets/2026-06-04-opentelemetry-diagnostics-in-elsa-3-8/featured.png"
 featuredImageAlt: "Generated technical illustration of workflow telemetry signals flowing into a local collector and trace diagnostics workspace"
-seoTitle: "OpenTelemetry Diagnostics in Elsa 3.8"
-seoDescription: "Elsa 3.8 adds OpenTelemetry workflow instrumentation, OTLP diagnostics ingestion, bounded local telemetry storage, and a Studio diagnostics viewer."
+seoTitle: "OpenTelemetry Diagnostics in Elsa 3.8: Local OTLP Viewer"
+seoDescription: "Elsa 3.8 OpenTelemetry diagnostics receive recent OTLP traces, metrics, logs, and resources into a bounded local store for Studio inspection."
 redirectFrom: []
 ---
 
-# OpenTelemetry Diagnostics in Elsa 3.8
+# OpenTelemetry Diagnostics in Elsa 3.8: Local OTLP Viewer
 
-There are two different OpenTelemetry stories in Elsa 3.8, and it is worth keeping them separate.
+Elsa 3.8 preview 1 has two OpenTelemetry stories. Elsa can produce workflow telemetry through .NET instrumentation, and the new `Elsa.Diagnostics.OpenTelemetry` module can receive recent OTLP telemetry for inspection in Studio ([Elsa 3.8 Preview 1](/blog/elsa-3-8-preview-1), 2026).
 
-The first is telemetry production. Elsa emits workflow and activity instrumentation through `System.Diagnostics`, using the `Elsa.Workflows` activity source and meter.
+Those two ideas should stay separate. The OpenTelemetry Protocol, or OTLP, defines how telemetry such as traces, metrics, and logs is encoded and transported ([OpenTelemetry OTLP specification](https://opentelemetry.io/docs/specs/otlp/), retrieved 2026-06-30). Elsa's diagnostics module is a local OTLP read surface. It is not your long-term observability backend.
 
-The second is diagnostics viewing. The new `Elsa.Diagnostics.OpenTelemetry` module can receive recent OTLP telemetry, keep it in a bounded diagnostics store, and expose normalized views to Elsa Studio.
+> **Key Takeaways**
+> - Elsa emits workflow instrumentation through `System.Diagnostics` using the `Elsa.Workflows` activity source and meter.
+> - `Elsa.Diagnostics.OpenTelemetry` receives recent OTLP traces, metrics, logs, and resources into a bounded diagnostics store.
+> - Studio reads normalized Elsa APIs; it does not parse OTLP protobuf payloads in the browser.
 
-If those two ideas get collapsed into one sentence, the feature sounds like "Elsa added an OpenTelemetry dashboard". That is not quite right.
+In our experience, this distinction avoids a lot of confusion. "Elsa supports OpenTelemetry diagnostics" does not mean "Elsa replaces your collector, vendor backend, dashboards, retention, and alerting."
 
-The more useful framing is this: Elsa now has first-party workflow telemetry, and Studio can inspect recent telemetry through a local diagnostics collector when you want that operational view close to the workflow runtime.
+## What does Elsa instrument?
 
-## Workflow instrumentation
+Elsa instruments workflow and activity execution through `System.Diagnostics`. Spans are emitted around workflow execution cycles and activity execution, and the meter emits workflow and activity measurements such as `elsa.workflow.started`, `elsa.workflow.completed`, `elsa.workflow.faulted`, and `elsa.activity.duration`.
 
-Elsa emits spans around workflow execution cycles and activity execution. The spans include workflow and activity identifiers, definition metadata, status, tenant ID when available, and fault status.
+The default attributes are intentionally conservative. They include identifiers, definition metadata, status, tenant ID when available, and fault status. They do not include workflow input values, activity input values, output payloads, headers, or variable values.
 
-It deliberately does not add workflow input, activity input, output payloads, headers, or variable values as span attributes.
+That is the right default for workflow systems. Telemetry should explain execution without turning observability into another place where sensitive or high-cardinality data leaks.
 
-That is the right default. Telemetry should help you understand execution without quietly turning observability into another place where sensitive or high-cardinality data leaks.
-
-The basic .NET setup is standard OpenTelemetry:
+A typical .NET setup still looks like standard OpenTelemetry configuration:
 
 ```csharp
 services.AddOpenTelemetry()
@@ -52,32 +53,27 @@ services.AddOpenTelemetry()
         .AddOtlpExporter());
 ```
 
-The meter emits workflow and activity measurements such as:
+If a host needs more detail, it can add its own instrumentation. Elsa's default should stay boring, predictable, and safe.
 
-- `elsa.workflow.started`
-- `elsa.workflow.completed`
-- `elsa.workflow.faulted`
-- `elsa.activity.duration`
+## How does trace context cross workflow HTTP calls?
 
-Faulted workflow and activity spans use an error status and record the exception type when an exception is available. Elsa does not add exception messages or stack traces to workflow span events.
+Trace context lets downstream services connect their spans to the same distributed trace. Elsa 3.8 injects the current W3C trace context into outbound `SendHttpRequest` and `FlowSendHttpRequest` calls when an active workflow or activity span exists.
 
-Again, that is a privacy and cardinality tradeoff. If a host wants more detail, it can add its own instrumentation, but the framework default should be conservative.
+That does not replace normal .NET HTTP client instrumentation. You still need the usual instrumentation if you want outbound HTTP spans from the host process.
 
-## Trace context through HTTP activities
+Elsa's job here is narrower: keep the trace context moving across the workflow boundary. Without that, a workflow can become a trace island even though it is part of a larger request path.
 
-Workflow systems often sit in the middle of other systems. A workflow receives a request, calls an API, waits, resumes, sends another request, and so on.
+## What does the diagnostics collector receive?
 
-If each step becomes a separate trace island, the picture is incomplete.
+The diagnostics collector receives OTLP HTTP/protobuf telemetry for four signal shapes: resources, traces, metrics, and logs. Core stores recent telemetry in a bounded local diagnostics store and exposes normalized read APIs to Studio.
 
-In Elsa 3.8, outbound `SendHttpRequest` and `FlowSendHttpRequest` calls inject the current W3C trace context headers when an active workflow or activity span exists. Downstream services can continue the same trace without needing Elsa-specific middleware.
+The default OTLP base path is:
 
-You still need normal .NET HTTP client instrumentation if you want outbound HTTP spans from the host. Elsa's job here is to keep the trace context moving across the workflow boundary.
+```text
+/elsa/otlp/v1
+```
 
-## The diagnostics collector
-
-The `Elsa.Diagnostics.OpenTelemetry` module is collector and read-side infrastructure. It does not create workflow spans, mutate `Activity.Current`, export telemetry to vendors, or provide durable OpenTelemetry persistence.
-
-It receives OTLP HTTP/protobuf telemetry under:
+with signal-specific endpoints:
 
 ```text
 POST /elsa/otlp/v1/traces
@@ -85,25 +81,7 @@ POST /elsa/otlp/v1/metrics
 POST /elsa/otlp/v1/logs
 ```
 
-Studio reads normalized diagnostics data through the Elsa API:
-
-```text
-POST /elsa/api/diagnostics/opentelemetry/resources/search
-POST /elsa/api/diagnostics/opentelemetry/traces/search
-GET  /elsa/api/diagnostics/opentelemetry/traces/{traceId}
-POST /elsa/api/diagnostics/opentelemetry/metrics/search
-POST /elsa/api/diagnostics/opentelemetry/logs/search
-GET  /elsa/api/diagnostics/opentelemetry/storage
-GET  /elsa/api/diagnostics/opentelemetry/collector-configuration
-```
-
-Live updates use the diagnostics hub:
-
-```text
-/elsa/hubs/diagnostics/opentelemetry
-```
-
-The default collector path is useful for local development and focused troubleshooting. For example:
+For local development, a sender can point at the Elsa host:
 
 ```bash
 OTEL_SERVICE_NAME=elsa-server
@@ -114,40 +92,56 @@ OTEL_BSP_SCHEDULE_DELAY=1000
 OTEL_METRIC_EXPORT_INTERVAL=1000
 ```
 
-If the collector is exposed beyond loopback, configure the API key option. The collector configuration endpoint returns endpoint and required-header names, but it does not return secret header values.
+If the collector is exposed beyond loopback, configure the API key option. The collector configuration endpoint returns endpoint and required-header names, but tests verify it returns `<configured>` rather than the secret value for `x-otlp-api-key`.
 
-That distinction matters. Studio can help you configure a sender without becoming a place where collector secrets are displayed.
+That is the right behavior. Studio can help an operator configure a sender without becoming a secret disclosure surface.
 
-## The Studio view
+## What does Studio read?
 
-Studio adds the OpenTelemetry diagnostics page at:
+Studio reads Elsa's normalized diagnostics APIs, not raw OTLP payloads. The Core trace search endpoint, for example, is `POST /diagnostics/opentelemetry/traces/search` and requires the OpenTelemetry diagnostics read permission.
+
+The Studio-facing route fragments are:
 
 ```text
-/diagnostics/opentelemetry
+POST /diagnostics/opentelemetry/resources/search
+POST /diagnostics/opentelemetry/traces/search
+GET  /diagnostics/opentelemetry/traces/{traceId}
+POST /diagnostics/opentelemetry/metrics/search
+POST /diagnostics/opentelemetry/logs/search
+GET  /diagnostics/opentelemetry/storage
+GET  /diagnostics/opentelemetry/collector-configuration
 ```
+
+Live updates use the diagnostics hub:
+
+```text
+/elsa/hubs/diagnostics/opentelemetry
+```
+
+Studio adds the page at `/diagnostics/opentelemetry`.
 
 ![Elsa Studio OpenTelemetry diagnostics page showing resources, traces, metrics, logs, dropped telemetry, and trace rows](../assets/2026-06-01-elsa-3-8-preview-1/opentelemetry-viewer.png)
 
-The module is a viewer for Core DTOs. It does not parse OTLP protobuf payloads in the browser. Core owns ingestion, redaction, storage, permissions, and API contracts. Studio renders resources, traces, trace details, metrics, OTLP logs, storage diagnostics, and collector configuration.
+The viewer includes resource search, trace search, trace details, a waterfall layout, metric series rows, OTLP log search, live updates, filters, export behavior, storage diagnostics, and collector configuration.
 
-This gives the UI a clean boundary. If the wire format or storage behavior changes, Core changes with the contract. Studio stays focused on the operator workflow.
+The filters are not decorative. The Studio tests preserve values such as resource ID, service name, trace ID, workflow instance ID, span status, time range, search text, and result limit when mapping UI state into trace requests.
 
-The viewer includes the pieces you would expect from a small diagnostics surface: resource search, trace search, trace detail and waterfall layout, metric series rows, OTLP log search, live updates, filters, export behavior, and storage overflow state.
+## Why is local storage bounded?
 
-It also keeps OpenTelemetry separate from structured logs and console logs. Correlation can happen through trace IDs, span IDs, resource values, and time windows, but the signals are not forced into one generic table.
+Local OpenTelemetry diagnostics storage is bounded because telemetry can be high volume. The store has capacity settings for traces, spans, metric points, OTLP log records, and live subscriber queues.
 
-## Bounded local storage
+When a buffer exceeds capacity, the oldest item for that signal is dropped and diagnostics counters are incremented. Live feed tests also cover filtered publishing, such as sending only resources and traces that match a selected service name.
 
-The default OpenTelemetry diagnostics store is bounded and in memory.
+This is operational honesty. If the local store is under pressure, Studio should show storage pressure instead of implying the view is complete.
 
-Capacity options cover traces, spans, metric points, OTLP log records, and live subscriber queues. When a buffer exceeds capacity, the oldest item for that signal is dropped and diagnostics counters are incremented.
+It also keeps the feature scoped. Elsa's local diagnostics collector is useful for local development, preview deployments, demos, and focused support sessions. It is not the place for month-long retention or alerting.
 
-This is the same kind of operational honesty that the logging modules use. If the local diagnostics store is under pressure, Studio should be able to show that pressure instead of pretending the view is complete.
+## How does this relate to structured and console logs?
 
-For production observability, you should usually export to an external OpenTelemetry Collector or observability backend. Those systems are built for retention, search, alerting, dashboards, scaling, and long-term analysis.
+OpenTelemetry diagnostics are the telemetry view. Structured logs are semantic `ILogger` events. Console logs are raw stdout and stderr output.
 
-Elsa's local collector is not trying to replace them.
+Those three surfaces can correlate through trace IDs, span IDs, workflow instance IDs, resource values, and time windows, but they should not be collapsed into one generic table.
 
-It is for the times when you want recent workflow-relevant telemetry available from Studio without standing up a full observability environment for every local or preview deployment.
+Use [structured logs](/blog/structured-logs-in-elsa-3-8) when you need categories, templates, scopes, exception fields, and workflow context. Use [console logs](/blog/console-logs-in-elsa-3-8) when you need raw process output. Use OpenTelemetry diagnostics when you need recent traces, metrics, resources, and OTLP logs close to the workflow runtime.
 
-That is a smaller promise, but a useful one.
+For production observability, keep exporting to your collector or backend of choice. Elsa's local viewer is valuable because it shortens the path from a workflow instance to recent telemetry. It is not valuable because it tries to be everything.

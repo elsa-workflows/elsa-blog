@@ -1,9 +1,9 @@
 ---
-title: "Reusing Triggers in Elsa Workflows 3.5"
+title: "Reusable Triggers in Elsa Workflows 3.5"
 slug: "reusing-triggers-in-elsa-workflows-3-5"
-description: "Reusing Triggers in Elsa Workflows 3.5"
+description: "Elsa 3.5 added reusable trigger base classes for custom events, timers, HTTP endpoints, and delayed execution so activity authors can focus on domain behavior."
 publishedAt: "2025-03-21"
-updatedAt: null
+updatedAt: "2026-06-30"
 status: "published"
 authors:
   - "sipke"
@@ -11,13 +11,192 @@ category: "Engineering"
 tags:
   - "elsa-workflows"
   - "workflow"
+  - "dotnet"
+  - "extensibility"
 featuredImage: "https://cdn-images-1.medium.com/max/1200/1*e3HFPUDKgWuLPxR7j9-gWw.png"
-featuredImageAlt: "Reusing Triggers in Elsa Workflows 3.5"
+featuredImageAlt: "Event-driven workflow illustration for reusable trigger activities in Elsa Workflows"
 sourceName: "Medium"
 sourceUrl: "https://medium.com/@sipkeschoorstra/reusing-triggers-in-elsa-workflows-3-5-d86a484f40b3"
-seoTitle: "Reusing Triggers in Elsa Workflows 3.5"
-seoDescription: "Reusing Triggers in Elsa Workflows 3.5"
+seoTitle: "Reusable Triggers in Elsa Workflows 3.5"
+seoDescription: "Elsa 3.5 reusable trigger base classes help custom activity authors build event, timer, HTTP endpoint, and delay behavior without reimplementing trigger plumbing."
 redirectFrom: []
 ---
 
-<section><div><div><h3>Reusing Triggers in Elsa Workflows 3.5</h3><h4>Elsa 3.5 Preview</h4></div><div><figure><img data-image-id="1*e3HFPUDKgWuLPxR7j9-gWw.png" data-width="1792" data-height="1024" data-is-featured="true" src="https://cdn-images-1.medium.com/max/1200/1*e3HFPUDKgWuLPxR7j9-gWw.png"><figcaption>Event driven workflows made easy with Elsa Workflows</figcaption></figure></div></div></section><section><div><div><p>Elsa Workflows is getting a new feature in version <strong>3.5</strong> that makes it easier to build custom trigger-based activities. With new reusable base classes, you can implement activities like <em>timers</em>, <em>event listeners</em>, and <em>HTTP endpoints</em> without dealing with low-level infrastructure.</p><p>This post walks through what’s new and how you can start using these features today — even though Elsa 3.5 is still in preview.</p></div></div></section><section><div><div><h3>Quick Note on Versioning</h3><p>These features are part of the <strong>Elsa 3.5.0 preview</strong> release. If you’re using Elsa 3.3 or 3.4, you won’t see them yet.</p><p>To try it out now:</p><ul><li>Reference the <code>3.5.0-preview.xxx</code> packages.</li><li>Use the <strong>preview feed from </strong><a href="https://docs.elsaworkflows.io/getting-started/packages#previews" rel="noopener" target="_blank"><strong>feez.io</strong></a>.</li></ul><p>Check the <a href="https://docs.elsaworkflows.io/getting-started/packages#previews" rel="noopener" target="_blank">official docs</a> for instructions on how to configure your NuGet feed to include preview versions.</p></div></div></section><section><div><div><h3>What’s New?</h3><p>Elsa 3.5 introduces base classes that simplify common trigger patterns:</p><ul><li><code>EventBase&lt;T&gt;</code> – for event-driven activities</li><li><code>TimerBase</code> – for recurring time-based logic</li><li><code>HttpEndpointBase</code> – for triggering workflows via HTTP</li><li><code>DelayFor(...)</code> – for pausing execution inside a custom activity</li></ul><p>These help you avoid repetitive infrastructure code, keeping your activities focused and easier to maintain.</p></div></div></section><section><div><div><h3>Event-Based Activities with <code>EventBase&lt;T&gt;</code></h3><p>This base class is for workflows that need to react to named events — like something happening in your application or an external system.</p><pre data-code-block-mode="1" spellcheck="false" data-code-block-lang="csharp"><span><span>public</span> <span>class</span> <span>CustomEvent</span> : <span>EventBase</span>&lt;<span>object</span>&gt;<br />{<br />    <span><span>protected</span> <span>override</span> <span>string</span> <span>GetEventName</span>(<span>ExpressionExecutionContext context</span>)</span> =&gt; <span>&quot;MyEvent&quot;</span>;<br /><br />    <span><span>protected</span> <span>override</span> <span>void</span> <span>OnEventReceived</span>(<span>ActivityExecutionContext context, <span>object</span>? eventData</span>)</span><br />    {<br />        Console.WriteLine(<span>&quot;Event received with data: &quot;</span> + eventData);<br />    }<br />}</span></pre><p>This pattern is useful for workflows that need to respond to domain events, integrations, or other asynchronous triggers.</p></div></div></section><section><div><div><h3>Recurring Activities with <code>TimerBase</code></h3><p>For periodic logic like polling or heartbeats, use <code>TimerBase</code>.</p><pre data-code-block-mode="1" spellcheck="false" data-code-block-lang="cpp"><span><span>public</span> <span>class</span> <span>CustomTimer</span> : TimerBase<br />{<br />    <span><span>protected</span> <span>override</span> TimeSpan <span>GetInterval</span><span>(ExpressionExecutionContext context)</span> </span>=&gt; TimeSpan.<span>FromSeconds</span>(<span>5</span>);<br /><br />    <span><span>protected</span> <span>override</span> <span>void</span> <span>OnTimerElapsed</span><span>(ActivityExecutionContext context)</span><br />    </span>{<br />        Console.<span>WriteLine</span>(<span>&quot;Timer elapsed&quot;</span>);<br />    }<br />}</span></pre><p>It’s a quick way to schedule regular workflow execution with a custom activity other than the built-in <code>Timer</code> activity.</p></div></div></section><section><div><div><h3>HTTP-Triggered Workflows with <code>HttpEndpointBase</code></h3><p>You can define HTTP endpoints directly in your activities — no extra routing or middleware needed.</p><pre data-code-block-mode="1" spellcheck="false" data-code-block-lang="csharp"><span><span>public</span> <span>class</span> <span>CustomHttpEndpoint</span> : <span>HttpEndpointBase</span><br />{<br />    <span><span>protected</span> <span>override</span> HttpEndpointOptions <span>GetOptions</span>()</span> =&gt; <span>new</span>()<br />    {<br />        Path = <span>&quot;my-path&quot;</span>,<br />        Methods = [HttpMethods.Get]<br />    };<br /><br />    <span><span>protected</span> <span>override</span> <span>async</span> ValueTask <span>OnHttpRequestReceivedAsync</span>(<span>ActivityExecutionContext context, HttpContext httpContext</span>)</span><br />    {<br />        httpContext.Response.StatusCode = <span>200</span>;<br />        <span>await</span> httpContext.Response.WriteAsync(<span>&quot;Hello World&quot;</span>, context.CancellationToken);<br />    }<br />}</span></pre><p>This is a useful way to create lightweight API endpoints or webhook handlers that connect directly into your workflows.</p></div></div></section><section><div><div><h3>Delays with <code>DelayFor</code></h3><p>For workflows that need to pause and resume later, you can use <code>DelayFor</code> inside any activity.</p><pre data-code-block-mode="1" spellcheck="false" data-code-block-lang="csharp"><span><span>public</span> <span>class</span> <span>CustomDelay</span> : <span>Activity</span><br />{<br />    <span><span>protected</span> <span>override</span> ValueTask <span>ExecuteAsync</span>(<span>ActivityExecutionContext context</span>)</span><br />    {<br />        context.DelayFor(TimeSpan.FromSeconds(<span>5</span>), OnDelayElapsedAsync);<br />        <span>return</span> <span>default</span>;<br />    }<br /><br />    <span><span>private</span> <span>async</span> ValueTask <span>OnDelayElapsedAsync</span>(<span>ActivityExecutionContext context</span>)</span><br />    {<br />        Console.WriteLine(<span>&quot;Delay elapsed&quot;</span>);<br />        <span>await</span> context.CompleteActivityAsync();<br />    }<br />}</span></pre><p>This helps keep delay logic contained within the activity that needs it.</p></div></div></section><section><div><div><h3>Summary</h3><p>The new trigger base classes in <strong>Elsa 3.5</strong> let you:</p><ul><li>Build event, timer, and HTTP activities without wiring up the internals.</li><li>Keep custom logic clean and focused.</li><li>Compose more maintainable workflows.</li></ul><blockquote><strong><em>Want to try it now?</em></strong><em><br> Grab the </em><code><em>3.5.0-preview.xxx</em></code><em> packages from </em><a href="https://docs.elsaworkflows.io/getting-started/packages#previews" rel="noopener" target="_blank"><em>feedz.io</em></a><em> and start experimenting with reusable triggers today.</em></blockquote><p>If you’re building workflows that rely on timers, HTTP calls, or events, these new base classes can save you time and help keep things organized.</p></div></div></section>
+# Reusable Triggers in Elsa Workflows 3.5
+
+Elsa 3.5 added a small but useful extensibility layer for custom trigger-based activities.
+
+Instead of rebuilding the same trigger plumbing every time you need a domain event, timer, HTTP endpoint, or delayed resume point, you can inherit from a reusable base class and focus on the behavior that belongs to your activity.
+
+The original version of this post was written while Elsa 3.5 was still in preview. That historical context still matters, but the feature itself is no longer just a preview idea. The [3.5.0 release discussion](https://github.com/elsa-workflows/elsa-core/discussions/6853) later moved the line from preview packages to the regular 3.5 release.
+
+> **Key Takeaways**
+> - Elsa 3.5 introduced four reusable trigger helpers: `EventBase<T>`, `TimerBase`, `HttpEndpointBase<T>`, and `DelayFor`.
+> - The base classes keep trigger indexing, waiting, resuming, and completion logic out of your custom activity code.
+> - Use them when your activity has domain-specific trigger semantics but can reuse Elsa's existing trigger infrastructure.
+
+## What problem do reusable triggers solve?
+
+The [official reusable triggers documentation](https://docs.elsaworkflows.io/extensibility/reusable-triggers-3.5-preview) lists four helpers for common trigger patterns: custom events, interval timers, HTTP endpoints, and delayed execution. The same shape is visible in the Elsa Core source for [`EventBase<T>`](https://github.com/elsa-workflows/elsa-core/blob/main/src/modules/Elsa.Workflows.Runtime/Activities/EventBase.cs), [`TimerBase`](https://github.com/elsa-workflows/elsa-core/blob/main/src/modules/Elsa.Scheduling/Activities/TimerBase.cs), [`HttpEndpointBase<T>`](https://github.com/elsa-workflows/elsa-core/blob/main/src/modules/Elsa.Http/Activities/HttpEndpointBase.cs), and [`DelayFor`](https://github.com/elsa-workflows/elsa-core/blob/main/src/modules/Elsa.Scheduling/Extensions/DelayActivityExecutionContextExtensions.cs). That matters because these are the places where custom activity code can otherwise become mostly infrastructure.
+
+If you have written custom workflow activities before, you have probably seen this shape. The interesting part is usually small: get the event name, decide the interval, define an HTTP route, or schedule a resume point.
+
+The repetitive part is everything around it:
+
+- producing the trigger payload used during indexing,
+- waiting for the external stimulus,
+- resuming the activity when the stimulus arrives,
+- passing input back into the workflow,
+- and completing the activity at the right time.
+
+Reusable trigger base classes are a way to keep those two concerns separate.
+
+You still own the domain-specific part. Elsa owns the trigger mechanics.
+
+That is the main mental model.
+
+## When should you use `EventBase<T>`?
+
+`EventBase<T>` is for activity types that resume when a named event is triggered. In the current Elsa Core implementation, the base class gets the event name, indexes an event stimulus, waits for that event, reads the event input, assigns `Result`, calls your hook, and completes the activity.
+
+That means the custom activity can stay focused on naming and handling the event:
+
+```csharp
+public class OrderApproved : EventBase<object>
+{
+    protected override string GetEventName(ExpressionExecutionContext context) =>
+        "OrderApproved";
+
+    protected override void OnEventReceived(
+        ActivityExecutionContext context,
+        object? input)
+    {
+        Console.WriteLine("Order approved event received.");
+    }
+}
+```
+
+The important detail is not the `Console.WriteLine`. It is the fact that the activity did not have to manually wire the bookmark, trigger payload, event input, or completion behavior.
+
+This pattern is useful for domain events, integration events, and application-level signals where a generic event activity would work technically, but a named custom activity would make the workflow easier to read.
+
+## When should you use `TimerBase`?
+
+`TimerBase` is for recurring interval behavior. The base class asks your activity for a `TimeSpan`, repeats with that interval, emits the timer trigger stimulus, calls your elapsed hook, and completes the activity after each tick.
+
+A custom timer can be very small:
+
+```csharp
+public class PollEveryFiveSeconds : TimerBase
+{
+    protected override TimeSpan GetInterval(ExpressionExecutionContext context) =>
+        TimeSpan.FromSeconds(5);
+
+    protected override void OnTimerElapsed(ActivityExecutionContext context)
+    {
+        Console.WriteLine("Polling interval elapsed.");
+    }
+}
+```
+
+This is a good fit when the interval has domain meaning.
+
+For example, `PollInventoryStatus`, `RefreshCustomerSnapshot`, or `CheckExternalJobStatus` may be more expressive in a workflow than a generic timer followed by a separate activity. The workflow reads closer to the business process, while Elsa still handles the timer infrastructure.
+
+## When should you use `HttpEndpointBase<T>`?
+
+`HttpEndpointBase<T>` is for custom activities that start or resume workflows from an HTTP request. The base class gets your endpoint options, waits for a matching HTTP request, exposes the current `HttpContext`, and completes the activity after your handler runs.
+
+The activity defines the HTTP surface:
+
+```csharp
+public class ReceiveWebhook : HttpEndpointBase<object>
+{
+    protected override HttpEndpointOptions GetOptions() => new()
+    {
+        Path = "webhooks/orders",
+        Methods = [HttpMethods.Post]
+    };
+
+    protected override async ValueTask OnHttpRequestReceivedAsync(
+        ActivityExecutionContext context,
+        HttpContext httpContext)
+    {
+        httpContext.Response.StatusCode = StatusCodes.Status202Accepted;
+        await httpContext.Response.WriteAsync(
+            "Webhook accepted.",
+            context.CancellationToken);
+    }
+}
+```
+
+This is useful when an HTTP endpoint is not just a transport detail, but part of the activity's meaning.
+
+A workflow designer can use `ReceiveWebhook`, `ReceivePaymentCallback`, or `StartDocumentApproval` as a first-class activity instead of configuring a generic endpoint the same way in every workflow.
+
+## How does `DelayFor` fit in?
+
+`DelayFor` is the smallest helper in this group, but it is useful because it works from inside any custom activity. The extension calculates a resume time from the current system clock and delegates to `DelayUntil`.
+
+That lets an activity pause itself without manually creating the scheduling machinery:
+
+```csharp
+public class WaitBeforeRetry : Activity
+{
+    protected override ValueTask ExecuteAsync(ActivityExecutionContext context)
+    {
+        context.DelayFor(TimeSpan.FromSeconds(5), OnDelayElapsedAsync);
+        return default;
+    }
+
+    private async ValueTask OnDelayElapsedAsync(ActivityExecutionContext context)
+    {
+        Console.WriteLine("Retry delay elapsed.");
+        await context.CompleteActivityAsync();
+    }
+}
+```
+
+Use this when the delay belongs inside the custom activity's behavior.
+
+If the delay is just a visible workflow step, the regular delay activity is still the clearer modeling choice. But if the delay is part of a retry policy, polling loop, or protocol-specific wait, keeping it inside the custom activity can make the workflow cleaner.
+
+## What should custom activity authors watch for?
+
+Reusable trigger base classes reduce boilerplate, but they do not remove design responsibility. The official docs and the current Elsa Core source both point to the same boundary: these helpers are for activities that can reuse Elsa's existing trigger model.
+
+Before creating a custom trigger activity, check three things.
+
+First, ask whether the activity name will make workflows easier to understand. A domain-specific activity is worth it when it hides repetition and clarifies intent. It is not worth it if it only wraps a generic activity without adding meaning.
+
+Second, keep trigger identity stable. Event names, HTTP paths, and timer intervals affect indexing and resumption. Treat them as part of the activity contract, not throwaway implementation details.
+
+Third, keep host concerns out of the activity where possible. If the behavior depends on services, options, or tenant-specific rules, inject or resolve those through the normal Elsa and .NET patterns rather than hard-coding them into the trigger.
+
+This is the same modularity story that shows up in later Elsa work, such as [shell features and modular configuration](https://www.elsaworkflows.io/blog/configuring-elsa-with-shell-features). Small extension points are most useful when they keep module boundaries honest.
+
+## Why this still matters after Elsa 3.5
+
+The reusable trigger work is not a headline feature like a new designer surface, but it changes the cost of building good custom activities.
+
+Without these base classes, teams often choose between two awkward options. They either keep using generic activities and repeat the same configuration in many workflows, or they build custom activities and reimplement trigger plumbing that should not be application code.
+
+`EventBase<T>`, `TimerBase`, `HttpEndpointBase<T>`, and `DelayFor` create a middle path.
+
+You can make a workflow read like your domain without owning the low-level mechanics of waiting, indexing, resuming, and completing.
+
+That is usually where the best Elsa extensions live: domain-specific on the outside, boring and reusable on the inside.
+
+## FAQ
+
+### Are reusable triggers only for Elsa 3.5?
+
+They were introduced around the Elsa 3.5 work and documented as part of the 3.5 preview, but the pattern remains useful beyond that release. If you are working against a newer Elsa 3.x version, verify the exact signatures in the Elsa Core source or the current docs before copying examples.
+
+### Should I replace every generic trigger with a custom activity?
+
+No. Generic trigger activities are still useful when the workflow configuration itself is the clearest expression of intent. Create a custom trigger activity when it removes repeated setup, gives the workflow a better domain vocabulary, or hides infrastructure that workflow authors should not have to think about.
+
+### Can `DelayFor` replace the normal delay activity?
+
+Usually no. Use the normal delay activity when the wait is a visible workflow step. Use `DelayFor` when the wait is internal to a custom activity, such as a retry delay, protocol wait, or domain-specific pause before completing the activity.

@@ -1,9 +1,9 @@
 ---
-title: "Secret References in Elsa 3.8"
+title: "Secret References in Elsa 3.8: Safer Workflow Inputs"
 slug: "secret-references-in-elsa-3-8"
-description: "A deeper look at Elsa 3.8 secrets: named secret references, stores, versioning, rotation, revocation, Studio picker support, and runtime resolution."
+description: "Elsa 3.8 secrets let workflows store named references instead of credential values, with stores, rotation, revocation, Studio picker support, and runtime resolution."
 publishedAt: "2026-06-05"
-updatedAt: null
+updatedAt: "2026-06-30"
 status: "published"
 authors:
   - "sipke"
@@ -15,142 +15,123 @@ tags:
   - "security"
 featuredImage: "../assets/2026-06-05-secret-references-in-elsa-3-8/featured.png"
 featuredImageAlt: "Generated technical illustration of workflow inputs referencing named secrets stored in a secure module"
-seoTitle: "Secret References in Elsa 3.8"
-seoDescription: "Elsa 3.8 adds native secrets with named references, stores, versioning, rotation, revocation, Studio picker support, and runtime resolution."
+seoTitle: "Secret References in Elsa 3.8: Safer Workflow Inputs"
+seoDescription: "Elsa 3.8 secrets let workflows store named references instead of credential values, with stores, rotation, revocation, Studio picker support, and runtime resolution."
 redirectFrom: []
 ---
 
-# Secret References in Elsa 3.8
+# Secret References in Elsa 3.8: Safer Workflow Inputs
 
-Workflow engines have an awkward relationship with secrets.
+Elsa 3.8 preview 1 adds `Elsa.Secrets`, a first-party model for named secrets, secret references, stores, lifecycle operations, Studio picker support, and runtime resolution ([Elsa 3.8 Preview 1](/blog/elsa-3-8-preview-1), 2026).
 
-Workflows need credentials all the time: API keys, bearer tokens, connection strings, private keys, passwords, webhook secrets. But workflow definitions are also something people edit, export, import, version, inspect, and sometimes log by mistake.
+The key change is simple: a workflow can store a reference such as `api:key` instead of storing the credential value as ordinary workflow data. That aligns with the general secrets-management principle that secrets should not be hardcoded or copied into places that are easy to export, log, or commit ([OWASP Secrets Management Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html), retrieved 2026-06-30).
 
-If the answer is "just paste the token into the activity input", the system will eventually disappoint you.
+> **Key Takeaways**
+> - Elsa 3.8 stores `Secret` expression references in workflow JSON, not the resolved secret value.
+> - The Core API supports create, update, rotate, revoke, delete, test, picker, descriptor, and read operations.
+> - Studio adds a secrets page and picker flow, but custom activities still need to mark sensitive inputs correctly.
 
-Elsa 3.8 preview 1 adds a first-party `Elsa.Secrets` module and a matching Studio UI. The important change is not just that Elsa can store named values. It is that workflow definitions can refer to secrets without storing the secret value as ordinary workflow data.
+In our experience, the biggest risk is not that a workflow needs a credential. That is normal. The risk is that the credential starts behaving like every other string input in the designer.
 
-That gives the product a proper boundary for secret-aware authoring and runtime resolution.
+## What is a secret reference?
 
-## More than a name/value bag
+A **secret reference** is a workflow expression value that points to a named secret. In Elsa 3.8, the serialized workflow input can contain an expression of type `Secret` with a value such as `{ "name": "api:key" }`, while the resolved credential stays in the configured secret store.
 
-A secret in Elsa has a logical identity and lifecycle. The model includes fields such as:
+The test coverage is explicit about this boundary. A workflow input created from `SecretExpression.Create(new("api:key", SecretTypeNames.Text, "production"))` serializes the `Secret` expression and the name `api:key`, and the test asserts that the sample secret value `top-secret` is not present in the JSON.
 
-- name and display name
-- description
-- type
-- store
-- optional scope
-- tags
-- status
-- current version
-- timestamps and expiration
+That is the right product line. Workflow definitions are edited, exported, imported, versioned, reviewed, and sometimes attached to support tickets. They should not become credential containers.
 
-The technical name is the stable reference used by workflows. The current value can rotate behind that reference.
+## What does the secret model contain?
 
-That distinction is the whole point. A workflow should be able to say "use `crm:token`" without embedding the actual token into workflow JSON. When the token rotates, future resolutions should use the new active version without editing the workflow definition.
+An Elsa secret has a logical identity and lifecycle. The model includes a name, display name, description, type, store, optional scope, tags, status, current version, timestamps, and expiration.
 
-## Stores and types
+The name is the stable reference. The value can rotate behind that name.
 
-The module has a few important contracts:
+For example, a workflow can keep referencing `crm:token`. When the token rotates, the reference can remain stable while the active version changes in the secret store.
 
-- `ISecretManager` handles create, get, update, rotate, revoke, delete, and test operations.
-- `ISecretResolver` resolves the latest active value by name.
-- `ISecretStore` and `ISecretStoreRegistry` provide pluggable storage backends.
-- `ISecretTypeRegistry` describes supported secret types.
-- `ISecretRepository` stores secret metadata and versions.
+That is much better than editing every workflow definition that used the old value. It also gives Studio a place to show status, metadata, versions, rotation, and revocation without showing the secret value as normal field content.
 
-Elsa 3.8 includes an Elsa-managed encrypted store and a configuration-backed read-only store.
+## Which stores does Elsa use?
 
-The encrypted store uses data protection and is the default writable store. The configuration-backed store maps configuration keys to secret values and cannot be written through the API.
+Elsa 3.8 includes an Elsa-managed encrypted store and a configuration-backed store. The encrypted store is the writable Elsa-managed path. The configuration-backed store lets Elsa reference values that already come from host configuration.
 
-That split is useful in real hosts. Some secrets should be managed by Elsa. Others already come from environment variables, Kubernetes secrets, Azure Key Vault-backed configuration, Docker secrets, or another host-level provider. The configuration store lets Elsa reference those values without pretending Studio owns them.
+That split is useful in real deployments. Some teams want Elsa to manage a development or tenant-specific secret. Others already source values from environment variables, Kubernetes secrets, Azure Key Vault-backed configuration, Docker secrets, or another host-level provider.
 
-## The management surface
+The configuration-backed path keeps those values owned by the host. Elsa can reference and resolve them without pretending Studio should write back to every upstream provider.
 
-The Core API lives under the normal Elsa API prefix:
+The module contracts keep this extensible:
 
-```text
-GET    /elsa/api/secrets
-GET    /elsa/api/secrets/{name}
-POST   /elsa/api/secrets
-POST   /elsa/api/secrets/{name}
-DELETE /elsa/api/secrets/{name}
-POST   /elsa/api/secrets/{name}/rotate
-POST   /elsa/api/secrets/{name}/revoke
-POST   /elsa/api/secrets/{name}/test
-POST   /elsa/api/secrets/picker
-GET    /elsa/api/secrets/descriptors
-```
+| Contract | Responsibility |
+| --- | --- |
+| `ISecretManager` | create, update, rotate, revoke, delete, and test |
+| `ISecretResolver` | resolve an active value by name |
+| `ISecretStore` | provide store-specific read and write behavior |
+| `ISecretStoreRegistry` | discover configured stores |
+| `ISecretTypeRegistry` | describe supported secret types |
+| `ISecretRepository` | persist secret metadata and versions |
 
-The permissions are split by operation:
+## What does the API expose?
+
+The Core API sits under the configured Elsa API prefix and exposes the normal lifecycle operations:
 
 ```text
-read:secrets
-write:secrets
-delete:secrets
-test:secrets
+GET    /secrets
+GET    /secrets/{name}
+POST   /secrets
+POST   /secrets/{name}
+DELETE /secrets/{name}
+POST   /secrets/{name}/rotate
+POST   /secrets/{name}/revoke
+POST   /secrets/{name}/test
+POST   /secrets/picker
+GET    /secrets/descriptors
 ```
 
-The `test` operation is worth calling out. It resolves the secret and reports whether resolution succeeded. It does not need to turn Studio into a place where the secret value is displayed.
+The rotate endpoint is a good example of the permission model: `POST /secrets/{name}/rotate` requires the secrets write permission. The wider permission set separates read, write, delete, and test operations.
 
-That is a small but important design point.
+The test endpoint is worth keeping. It resolves the secret and reports whether resolution succeeded. It does not need to display the secret value to prove that the reference works.
 
-## The Studio experience
+## How does Studio change authoring?
 
-Studio adds the Secrets page under:
-
-```text
-/security/secrets
-```
+Studio adds the Secrets page at `/security/secrets`. From there, users can search, create, open details, update metadata, rotate, test, revoke, and delete secrets.
 
 ![Elsa Studio secret details page with profile metadata, version status, rotation controls, and revoke action](../assets/2026-06-01-elsa-3-8-preview-1/secrets.png)
 
-From there you can search, create, open details, update metadata, rotate, test, revoke, and delete secrets.
+The more important authoring feature is the secret picker. Inputs can opt into a `SecretPicker` UI hint, and Studio reads picker options from the input descriptor. That lets an input render a picker instead of a plain text field.
 
-The more interesting part for workflow authors is the secret picker UI hint. Inputs that can contain secrets can render a picker instead of a plain text box. The picker stores a `Secret` expression reference instead of the current secret value.
+For workflow authors, the effect is straightforward. Instead of pasting a bearer token into an HTTP activity, they select a named secret. The workflow stores the reference, and runtime resolution fetches the active value when the workflow executes.
 
-For simple no-code binding, that is the path I expect most users to take.
+That is a small UI change with a large operational effect.
 
-Instead of pasting a bearer token into an HTTP activity input, the activity input can hold a secret reference. At runtime, the expression resolves through `ISecretResolver` and returns the latest active value.
+## How do scripts resolve secrets?
 
-## Secret expressions and JavaScript
-
-The `Secret` expression is the direct workflow binding mechanism. A reference can include the secret name and optional type or scope constraints. If a text token reference points at an RSA key, or a production-scoped reference points at a development secret, resolution should fail.
-
-Failures for missing, expired, revoked, or incompatible secrets are reported as non-secret error messages. The system should not leak the secret value while telling you what went wrong.
-
-For scripts, `Elsa.Secrets.JavaScript` adds:
+The `Secret` expression is the preferred path for simple binding. For JavaScript, `Elsa.Secrets.JavaScript` adds `getSecret(name)`:
 
 ```javascript
 const token = await getSecret("crm:token");
 return `Bearer ${token}`;
 ```
 
-`getSecret(name)` returns a `Promise<string>`, so JavaScript needs to `await` it or compose it with `.then(...)`.
+The integration tests show that `getSecret('api:key')` returns a promise-compatible value and records that `api:key` was resolved. Other tests cover `.then(...)` composition and async IIFEs.
 
-This is useful when a script has to combine a secret with runtime data. It should not become a habit of resolving secrets and then writing them into variables, outputs, logs, incident messages, or activity state.
+Use this when a script genuinely needs to combine a secret with runtime data. Do not resolve a secret just to write it into a variable, activity output, log message, or incident note. Once the value leaves the resolver, it is just a string again.
 
-Use the `Secret` expression for simple binding. Use `getSecret` when the script genuinely needs to compute something around the value.
+## What still depends on activity authors?
 
-## Sensitive inputs still matter
+Secret references reduce the need to store credential values in workflow definitions, but activity authors still need to mark sensitive inputs correctly.
 
-Secret references reduce the need to store credential values in workflow definitions, but they do not remove the need to mark sensitive inputs correctly.
+Elsa maps `CanContainSecrets` into input descriptor sensitivity. The test coverage verifies that an activity input marked as sensitive is described as sensitive, while a public input is not.
 
-Elsa's guidance is that activity inputs capable of carrying credentials should set `CanContainSecrets = true`. Sensitive activity inputs should not be written to activity state after evaluation.
+That matters for custom activities. If an activity accepts an API key, authorization header, connection string, password, private key, webhook secret, or token, treating that field as a normal text input is not good enough.
 
-That matters for custom activities. If an activity accepts a connection string, API key, password, authorization header, or similar value, treating it as an ordinary string input is not good enough. The designer experience, persistence behavior, and runtime diagnostics all need to understand that the field can contain sensitive data.
+The secrets module gives Elsa a native contract for safer references. It does not automatically audit every custom activity, stop developers from logging resolved values, or replace host-level secrets policy.
 
-The secrets module gives Elsa a native contract for this. It does not magically fix every custom activity.
+## What should teams do with this preview?
 
-## Preview foundation
+Teams should use the preview to draw a clear boundary between workflow data and credential data. Start by identifying inputs that can contain credentials, then mark those inputs as secret-capable and test the Studio picker flow.
 
-I would treat this as an important foundation rather than the final word on enterprise secret management.
+Next, decide which store owns which class of secret. A local encrypted store might be fine for development or isolated runtime values. Host configuration may be better for values already managed by infrastructure.
 
-The useful thing in 3.8 is that Elsa now has a product-level model for named secrets, secret references, stores, versioning, rotation, revocation, testing, picker integration, and runtime resolution.
+Finally, review scripts. `getSecret(name)` is useful, but it also makes it easy to turn a protected value back into ordinary text. Keep resolved values close to the call that needs them.
 
-That gives us a clean place to integrate more stores and policies over time.
-
-More importantly, it gives workflow authors a better default than pasting credentials into activity inputs.
-
-That alone is worth doing.
+The valuable part of Elsa 3.8 is not just a new settings page. It is the product-level rule that workflows can reference secrets without becoming the place where secrets live.

@@ -3,7 +3,7 @@ title: "Weaver Grounding Tools in Elsa 3.8"
 slug: "weaver-grounding-tools-in-elsa-3-8"
 description: "A practical look at the new Weaver grounding tools in Elsa 3.8 and why the AI assistant needs server-side workflow context rather than model memory."
 publishedAt: "2026-06-15"
-updatedAt: null
+updatedAt: "2026-07-01"
 status: "published"
 authors:
   - "sipke"
@@ -23,7 +23,7 @@ redirectFrom: []
 
 # Weaver Grounding Tools in Elsa 3.8
 
-An AI assistant for a workflow engine is only useful if it knows what is actually installed.
+Elsa 3.8's Weaver grounding work gives the assistant server-side tools for activities, workflow definitions, runtime instances, incidents, and workflow proposals. The implementation landed across Core and Studio in [`elsa-core` PR #7704](https://github.com/elsa-workflows/elsa-core/pull/7704) and [`elsa-studio` PR #900](https://github.com/elsa-workflows/elsa-studio/pull/900), with the server retaining the actual workflow context.
 
 That sounds obvious, but it is the difference between a chat feature that gives plausible workflow advice and one that can help with the system in front of you.
 
@@ -31,17 +31,24 @@ Elsa workflows are not just generic diagrams. A real host has a specific activit
 
 It needs grounding.
 
-That is the idea behind the Weaver grounding work that landed in [`elsa-core` PR #7704](https://github.com/elsa-workflows/elsa-core/pull/7704), together with the Studio surface in [`elsa-studio` PR #900](https://github.com/elsa-workflows/elsa-studio/pull/900).
-
 The interesting part is not just "Elsa has AI tools now."
 
 The more important part is where the boundary sits.
 
-## The server owns the truth
+> **Key Takeaways**
+> - Weaver tools are registered server-side, so the assistant can ask Elsa for bounded workflow evidence.
+> - Workflow creation and update are proposal-only paths, not direct writes to the workflow store.
+> - Studio discovers AI capabilities from the server instead of assuming every host exposes the same features.
 
-The new `Elsa.AI.Host` module is deliberately provider-neutral. Its README describes the module as the place that owns Weaver's server surface: chat orchestration, context resolution, tool registration, proposal governance, audit, and Studio-facing capabilities.
+This is the AI counterpart to a broader Elsa 3.8 theme: make operational behavior explicit. You can see the same direction in [workflow alterations](/blog/workflow-alterations-in-elsa-3-8), [structured logs](/blog/structured-logs-in-elsa-3-8), and [OpenTelemetry diagnostics](/blog/opentelemetry-diagnostics-in-elsa-3-8).
 
-Provider SDK details stay outside that surface.
+## Why should the server own the truth?
+
+The new `Elsa.AI.Host` module is deliberately provider-neutral. Its server surface owns chat orchestration, context resolution, tool registration, proposal governance, audit, and Studio-facing capabilities. Provider SDK details stay outside that surface.
+
+**Weaver grounding** is the server-side evidence layer that lets the assistant ask Elsa what activities, workflows, instances, incidents, and proposal capabilities are actually available. In our experience, that layer matters more than prompt polish once the assistant is used against a real host.
+
+In practice, that keeps the useful context where it already lives: inside Elsa Server, behind the same module composition, tenancy, authorization, persistence, and operational rules as the rest of the application.
 
 That matters because the useful context is not in the browser and it is not in the model provider. It lives in Elsa Server:
 
@@ -55,9 +62,9 @@ So the grounding tools are registered as server-side `IAITool` implementations. 
 
 That is the right default for a workflow product.
 
-## What Weaver can ask for
+## What can Weaver ask for?
 
-The initial grounding surface is small enough to understand, but broad enough to be useful.
+The initial grounding surface is small enough to understand, but broad enough to be useful. It covers four families: activities, workflow definitions, proposals, and runtime inspection.
 
 Activity tools:
 
@@ -102,13 +109,15 @@ For existing workflows, it should be able to retrieve definitions, summarize gra
 
 For operations, it should be able to inspect a workflow instance, execution history, activity state, and incidents, without turning runtime state into a free-for-all.
 
-There is a quiet but important constraint in the implementation: tool results are bounded and redacted before returning to the model or Studio. The public grounding result model has a summary, items, total/returned counts, truncation state, optional cursor, evidence references, and warnings. In other words, the tool response is shaped like evidence, not like an unbounded dump of server data.
+There is a quiet but important constraint in the implementation: tool results are bounded and redacted before returning to the model or Studio. The public grounding result model has a summary, items, total/returned counts, truncation state, optional cursor, evidence references, and warnings.
+
+In other words, the tool response is shaped like evidence, not like an unbounded dump of server data.
 
 That is a practical detail, but it is one of the details that makes this kind of feature survivable.
 
-## Proposal-only is the important safety valve
+## Why are workflow changes proposal-only?
 
-The workflow proposal tools are intentionally not "save this workflow" tools.
+The workflow proposal tools are intentionally not "save this workflow" tools. They create reviewable `AIProposal` records, which is a safer boundary for executable workflow behavior than letting a model write directly to the workflow store.
 
 `workflows.proposeCreate` creates an `AIProposal` with a workflow payload, rationale, validation diagnostics, graph diff, tenant/conversation metadata, and creator information. It writes to `IAIProposalStore`.
 
@@ -124,9 +133,9 @@ That is especially important in Elsa because workflows are executable system beh
 
 Proposal-only mutation keeps Weaver useful without pretending the model should have direct write access to the workflow store.
 
-## Studio discovers capabilities
+## How does Studio discover AI capabilities?
 
-The Studio work in PR #900 follows the same boundary.
+Studio follows the same boundary. `Elsa.Studio.AI` calls Elsa-owned endpoints and renders what the server says is available, rather than baking provider assumptions into the browser.
 
 `Elsa.Studio.AI` talks to Elsa-owned endpoints:
 
@@ -155,11 +164,7 @@ This is the part I like most about the design. The UI is not hard-coded around o
 
 ## The model should not be the integration boundary
 
-There is a broader lesson here that goes beyond Weaver.
-
-If you build AI into a business application, it is tempting to start with prompts. Prompts matter, but they are not the architecture.
-
-The architecture is the boundary around data, permissions, tools, side effects, and review.
+There is a broader lesson here that goes beyond Weaver. If you build AI into a business application, prompts are not the architecture. The architecture is the boundary around data, permissions, tools, side effects, and review.
 
 For Weaver, that boundary is:
 
@@ -170,7 +175,7 @@ For Weaver, that boundary is:
 - proposal-only workflow mutations,
 - and explicit capability discovery.
 
-That still leaves plenty of hard work. Tool quality matters. Validation needs to keep improving. Proposal review needs to feel natural. Runtime inspection has to be careful about sensitive state and tenant scope. None of this becomes magically solved because there is an assistant in the UI.
+That still leaves plenty of hard work. Tool quality matters. Validation needs to keep improving. Proposal review needs to feel natural. Runtime inspection has to be careful about sensitive state and tenant scope. None of this becomes solved because there is an assistant in the UI.
 
 But the direction is right.
 

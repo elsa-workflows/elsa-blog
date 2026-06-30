@@ -3,7 +3,7 @@ title: "Stable Instance Names for Azure Service Bus"
 slug: "stable-instance-names-for-azure-service-bus"
 description: "A practical look at why Elsa's Azure Service Bus deployments now support stable application instance names, and how a random per-process name can turn restarts into orphaned subscriptions."
 publishedAt: "2026-06-22"
-updatedAt: null
+updatedAt: "2026-07-01"
 status: "published"
 authors:
   - "sipke"
@@ -23,7 +23,7 @@ redirectFrom: []
 
 # Stable Instance Names for Azure Service Bus
 
-Some production bugs start with the wrong question.
+Elsa now supports opt-in stable application instance names so Azure Service Bus deployments can reuse the same per-instance transport identity across restarts. That matters because Azure Service Bus Standard and Premium tiers cap a topic at 2,000 subscriptions ([Microsoft Learn](https://learn.microsoft.com/en-us/azure/service-bus-messaging/service-bus-quotas), 2026), and abandoned per-instance subscriptions can eventually turn startup into a quota failure.
 
 A customer running Elsa on Kubernetes with the Azure Service Bus transport reported slow startup, crash loops, and a Service Bus namespace full of old per-instance queues. The obvious suspicion was the backlog. There were queues with thousands of messages in them, and the application was not becoming ready quickly enough.
 
@@ -35,9 +35,18 @@ The more interesting failure was that every restart created another per-instance
 
 That is the kind of operational detail that is easy to miss until a system has been restarted enough times in anger.
 
-## Why the instance name matters
+> **Key Takeaways**
+> - Production hosts can now configure `ApplicationInstanceOptions.InstanceName` or `InstanceNameEnvironmentVariable`.
+> - The name must be stable across restarts and unique across concurrently running instances.
+> - Existing orphaned Service Bus entities still need cleanup; the fix prevents new churn once configured.
+
+This is the same class of operational work as [structured logs](/blog/structured-logs-in-elsa-3-8), [OpenTelemetry diagnostics](/blog/opentelemetry-diagnostics-in-elsa-3-8), and [Groundwork's persistence boundary](/blog/groundwork-and-the-persistence-boundary-in-elsa): not glamorous, but important once Elsa is running in real infrastructure.
+
+## Why does the instance name matter?
 
 Elsa uses an application instance name for cluster-related infrastructure. With the Azure Service Bus transport, that name is part of the per-instance entities used for distributed cache change-token signaling.
+
+**Stable instance naming** means the same logical application instance gets the same Elsa instance name after a restart, while concurrently running instances still get distinct names. In our experience, that distinction is where local defaults and production broker topology start to diverge.
 
 Before the recent fix, the default provider generated a random instance name for each process start. That is a reasonable local default. It avoids collisions when multiple logical instances are started inside the same process, including some component test scenarios.
 
@@ -49,13 +58,13 @@ One restart is harmless.
 
 Many restarts can become a pile of abandoned subscriptions.
 
-And Azure Service Bus Standard has a hard limit of 2,000 subscriptions per topic. Once the change-token topic reaches that limit, creating the next subscription fails with `QuotaExceeded`. Since Elsa's MassTransit host startup waits for the bus to start, the application can get stuck before readiness.
+And Azure Service Bus has a hard limit of 2,000 subscriptions per topic in Standard and Premium namespaces ([Microsoft Learn](https://learn.microsoft.com/en-us/azure/service-bus-messaging/service-bus-quotas), 2026). Once the change-token topic reaches that limit, creating the next subscription fails with `QuotaExceeded`. Since Elsa's MassTransit host startup waits for the bus to start, the application can get stuck before readiness.
 
 The investigation is captured in [`elsa-core` issue #7732](https://github.com/elsa-workflows/elsa-core/issues/7732) and the root-cause issue [`#7736`](https://github.com/elsa-workflows/elsa-core/issues/7736). The fix landed in [`elsa-core` PR #7734](https://github.com/elsa-workflows/elsa-core/pull/7734) and was ported to the 3.7, 3.8, and main branches in [`#7742`](https://github.com/elsa-workflows/elsa-core/pull/7742), [`#7743`](https://github.com/elsa-workflows/elsa-core/pull/7743), and [`#7744`](https://github.com/elsa-workflows/elsa-core/pull/7744).
 
-## The useful correction
+## What changed in Elsa?
 
-The fix is deliberately opt-in for the patch line: Elsa now has `ApplicationInstanceOptions`, read by `ConfiguredApplicationInstanceNameProvider`.
+The fix is deliberately opt-in for the patch line: Elsa now has `ApplicationInstanceOptions`, read by `ConfiguredApplicationInstanceNameProvider`. The provider keeps the local-development default, but it gives production hosts a stable identity hook.
 
 The provider resolves the instance name in this order:
 
@@ -95,9 +104,9 @@ elsa.UseApplicationCluster(cluster =>
 
 The implementation also validates the configured name and shortens long values deterministically when needed, because downstream transport entity names still have provider-specific limits. That is a small detail, but it matters. A fix for restart churn should not introduce a new failure mode where a long pod name breaks transport setup.
 
-## What this does not solve
+## What does this not solve?
 
-This does not magically clean up a namespace that has already reached the subscription cap.
+This does not magically clean up a namespace that has already reached the subscription cap. Stable names prevent repeated leakage from the same logical instance; they do not remove already-orphaned subscriptions or queues.
 
 If an Azure Service Bus namespace already has thousands of orphaned change-token subscriptions or queues, you still need a one-time cleanup as part of rollout. The stable name prevents the same logical instance from leaking a new subscription on every restart after the fix is configured. It does not delete historical debris by itself.
 
@@ -105,11 +114,9 @@ It also does not mean the original startup report had only one cause. The tracki
 
 That separation is worth spelling out. In distributed systems, one incident report can contain several problems that look like one problem because they all show up during startup.
 
-## The broader lesson
+## What should teams take away?
 
-Random names are useful when the lifetime of the name is the lifetime of the process.
-
-They are less useful when the name is used to create durable infrastructure.
+Random names are useful when the lifetime of the name is the lifetime of the process. They are much less useful when the name is used to create durable infrastructure.
 
 For local development and tests, a random Elsa application instance name is convenient. For a clustered production deployment using a broker with durable topology and hard entity limits, the instance name becomes part of the operational contract. It should be treated the same way you treat a queue name, a consumer group, or a database schema name: stable enough that the infrastructure can converge, and unique enough that live instances do not step on each other.
 

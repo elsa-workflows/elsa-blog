@@ -3,7 +3,7 @@ title: "Suspended Workflows Are Runtime State, Not Just Definitions"
 slug: "suspended-workflows-and-elsa-upgrades"
 description: "A practical look at what happens when Elsa workflows are suspended during an upgrade, and why persisted state and bookmarks need their own migration plan."
 publishedAt: "2026-06-29"
-updatedAt: null
+updatedAt: "2026-07-01"
 status: "published"
 authors:
   - "sipke"
@@ -23,21 +23,26 @@ redirectFrom: []
 
 # Suspended Workflows Are Runtime State, Not Just Definitions
 
-A question came up this week that is worth turning into a post because it touches a part of workflow systems that is easy to underestimate:
+Suspended Elsa workflows should be treated as persisted runtime state during upgrades, not as definitions that can always be reloaded by the newer runtime. The question came up in [discussion #7758](https://github.com/elsa-workflows/elsa-core/discussions/7758), where a 3.2-to-3.7 upgrade exposed differences in bookmarks, serialized workflow state, type names, event casing, and flow scope data.
 
-What should you do with suspended workflow instances when upgrading Elsa from one version to another?
+The practical answer is conservative: drain, test with real suspended records, or write a targeted migration before relying on old instances in the new runtime.
 
-More concretely, the question in [discussion #7758](https://github.com/elsa-workflows/elsa-core/discussions/7758) was about workflows created under Elsa 3.2 and resumed under 3.7. Some persisted records no longer lined up cleanly with the newer runtime shape. Bookmarks, workflow instance data, type names, event casing, flow scope state. The kind of thing you only discover when a real long-running process has been waiting in storage while the application moved on.
-
-The short answer is not very glamorous: suspended workflow instances are not just old workflow definitions waiting to be reloaded.
+The short version is not very glamorous: suspended workflow instances are not just old workflow definitions waiting to be reloaded.
 
 They are runtime state.
 
 That distinction matters during upgrades.
 
-## Resume starts from what was persisted
+> **Key Takeaways**
+> - Resume uses persisted workflow state, bookmarks, and the stored workflow definition version.
+> - Type aliases and forwarded types help with some compatibility cases, but they are not a general suspended-instance upgrader.
+> - Production upgrades should drain long-running instances, test real persisted records, or migrate the affected records deliberately.
 
-When Elsa resumes a workflow instance, it does not simply take the latest workflow definition and reconstruct everything from scratch.
+This is the upgrade-side companion to [workflow alterations in Elsa 3.8](/blog/workflow-alterations-in-elsa-3-8), [Groundwork's persistence boundary](/blog/groundwork-and-the-persistence-boundary-in-elsa), and the diagnostics work around [OpenTelemetry in Elsa 3.8](/blog/opentelemetry-diagnostics-in-elsa-3-8). Alterations and observability help you operate live state, but old suspended data still needs an explicit upgrade plan when version boundaries change its shape.
+
+## What does resume actually load?
+
+When Elsa resumes a workflow instance, it does not simply take the latest workflow definition and reconstruct everything from scratch. The current runtime path starts from the stored instance and its persisted state.
 
 The current runtime path is more concrete than that. `LocalWorkflowClient` loads the stored workflow instance, takes its persisted `WorkflowState`, resolves the workflow graph using the stored `DefinitionVersionId`, and passes that state back into the workflow runner.
 
@@ -56,9 +61,9 @@ It has to preserve enough of the runtime contract for the suspended instance to 
 
 That is not unusual for a workflow engine. It is exactly what makes long-running workflows useful: they remember where they were. But it also means persisted workflow state becomes part of your upgrade surface.
 
-## Compatibility hooks help, but they are not a general upgrader
+## How far do compatibility hooks go?
 
-Elsa does have compatibility support in places.
+Elsa does have compatibility support in places. Those hooks are useful, but they should not be read as a general-purpose suspended-instance migration system.
 
 For example, [`SerializationTypeResolver`](https://github.com/elsa-workflows/elsa-core/blob/main/src/modules/Elsa.Common/Serialization/SerializationTypeResolver.cs) can resolve registered aliases and some legacy type names. Current code also has forwarded-type support in places, such as the obsolete `EventBookmarkPayload` forwarding to `EventStimulus`.
 
@@ -74,9 +79,11 @@ Another example is `FlowScope`. In Elsa 3.2, the flow scope stored an owner acti
 
 That does not make either design wrong. It just means old suspended instances may contain data that was valid for the old runtime, not automatically valid for the new one.
 
-## The operational rule: drain, test, or migrate
+## What is the upgrade rule?
 
-For applications using Elsa in production, I would treat suspended workflow instances the same way I treat database schema changes that carry business state. They deserve an upgrade plan.
+For applications using Elsa in production, treat suspended workflow instances the same way you treat database schema changes that carry business state. They deserve an upgrade plan, because the stored records are part of the running system.
+
+In our experience, the safest upgrades are the boring ones: identify the runtime state first, prove the target version can understand it, then cut over. The hard part is not the package update. It is the data you already promised to resume later.
 
 The safest option is to drain them before upgrading. Let running and suspended instances complete on the old version where practical. Then upgrade when the system has no long-lived runtime state waiting on old assumptions.
 
@@ -98,9 +105,9 @@ And sometimes that is the right answer: write a targeted migration for your pers
 
 Not a generic migration for every possible Elsa workflow in the world. A migration for the exact records, providers, activities, and versions your system uses.
 
-## Why this is different from workflow definition versioning
+## Why is this different from definition versioning?
 
-Elsa already has workflow definition versions, and that can make this topic feel like it should be solved automatically.
+Elsa already has workflow definition versions, and that can make this topic feel like it should be solved automatically. Definition versioning is necessary, but it answers a narrower question.
 
 Definition versioning answers a different question: "Which workflow definition should this instance use?"
 
@@ -116,7 +123,7 @@ There are tools for runtime correction. Elsa 3.8's workflow alterations work is 
 
 ## A practical upgrade checklist
 
-If you are planning an Elsa upgrade and you have suspended instances, I would check these before cutting over:
+If you are planning an Elsa upgrade and you have suspended instances, check these before cutting over:
 
 - Do you have any running or suspended workflow instances that must survive the upgrade?
 - Are the workflow definition versions referenced by those instances still present after the upgrade?
@@ -140,6 +147,6 @@ That is the whole point of a durable workflow engine. Elsa can stop, persist, an
 
 So if you are upgrading across versions and you have important suspended workflows, do the boring work:
 
-Export a few representative records. Restore them into staging. Resume them. Compare the old and new shapes. Decide whether to drain, migrate, or accept that a given class of instances should finish on the old version.
+Export a few representative records. Restore them into staging. Resume them. Compare the old and new shapes. Decide whether to drain, migrate, alter, or accept that a given class of instances should finish on the old version.
 
 It is not the flashiest upgrade advice, but it is the kind that prevents a long-running process from becoming archaeology.

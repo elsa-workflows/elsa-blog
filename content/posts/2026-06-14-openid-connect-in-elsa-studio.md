@@ -3,7 +3,7 @@ title: "OpenID Connect in Elsa Studio 3.7"
 slug: "openid-connect-in-elsa-studio"
 description: "Elsa Studio 3.7 added a cleaner OpenID Connect authentication model, with separate Blazor Server and WebAssembly packages instead of one login implementation trying to cover every host."
 publishedAt: "2026-06-14"
-updatedAt: null
+updatedAt: "2026-07-01"
 status: "published"
 authors:
   - "sipke"
@@ -23,7 +23,7 @@ redirectFrom: []
 
 # OpenID Connect in Elsa Studio 3.7
 
-Authentication is one of those parts of a workflow product that only looks boring from a distance.
+Elsa Studio 3.7 added OpenID Connect support in the place where it belongs: the host-specific authentication layer. Blazor Server uses ASP.NET Core cookie plus OIDC authentication, while Blazor WebAssembly uses the framework's browser-side authentication library ([Microsoft Learn](https://learn.microsoft.com/en-us/aspnet/core/security/authentication/configure-oidc-web-authentication), 2026; [Microsoft Learn](https://learn.microsoft.com/en-us/aspnet/core/blazor/security/webassembly/standalone-with-authentication-library), 2026).
 
 For local development, a built-in username and password flow is convenient. You start the server, open Studio, log in, and get on with designing workflows. That is still useful.
 
@@ -35,13 +35,22 @@ The question is "can Studio participate in the same identity boundary as the res
 
 Elsa Studio 3.7 added a much cleaner answer to that question.
 
-The work landed before the 3.7 release, mostly through [`elsa-studio` PR #721](https://github.com/elsa-workflows/elsa-studio/pull/721) and [`elsa-studio` PR #723](https://github.com/elsa-workflows/elsa-studio/pull/723), and was shipped with [Elsa 3.7.0](https://github.com/elsa-workflows/elsa-core/releases/tag/3.7.0). Since then, the README guidance has also been tightened in [`elsa-studio` PR #841](https://github.com/elsa-workflows/elsa-studio/pull/841) and [`elsa-studio` PR #872](https://github.com/elsa-workflows/elsa-studio/pull/872).
+The work landed before the 3.7 release, mostly through [`elsa-studio` PR #721](https://github.com/elsa-workflows/elsa-studio/pull/721) and [`elsa-studio` PR #723](https://github.com/elsa-workflows/elsa-studio/pull/723), and shipped with [Elsa 3.7.0](https://github.com/elsa-workflows/elsa-core/releases/tag/3.7.0). Since then, the README guidance has also been tightened in [`elsa-studio` PR #841](https://github.com/elsa-workflows/elsa-studio/pull/841) and [`elsa-studio` PR #872](https://github.com/elsa-workflows/elsa-studio/pull/872).
 
 It is not the newest thing in the repository anymore, but it is worth calling out because it addresses a long-running demand signal: people wanted Studio to work with their existing OpenID Connect setup instead of treating authentication as something bolted onto the sample host.
 
-## The important design choice
+> **Key Takeaways**
+> - Elsa Studio now has separate OIDC packages for Blazor Server and Blazor WebAssembly hosts.
+> - Server-hosted Studio can use cookies, protected authentication tickets, and optional confidential-client settings.
+> - WebAssembly Studio remains a public browser client, so it uses framework-managed token acquisition and no client secret.
 
-The interesting part is not just that Studio can use OpenID Connect.
+If you are also tightening the host around Studio, this OIDC work sits next to the broader shell and security work covered in [configuring Elsa with shell features](/blog/configuring-elsa-with-shell-features), [secret references in Elsa 3.8](/blog/secret-references-in-elsa-3-8), and the deliberately split [Elsa Studio dashboard](/blog/the-elsa-studio-dashboard-is-split-on-purpose).
+
+## Why split the OIDC packages?
+
+Elsa split OIDC into hosting-specific packages because Blazor Server and Blazor WebAssembly have different security boundaries. ASP.NET Core's OIDC handler is designed for server-side web apps, while Blazor WebAssembly uses `Microsoft.AspNetCore.Components.WebAssembly.Authentication` in the browser ([Microsoft Learn](https://learn.microsoft.com/en-us/aspnet/core/blazor/security/webassembly/standalone-with-authentication-library), 2026).
+
+An **OIDC Studio host** is the application that runs Elsa Studio and participates in the organization's identity boundary. In our experience, most production confusion comes from treating that host as a generic sample app instead of an authenticated client with its own deployment and token rules.
 
 The interesting part is that the implementation stopped pretending there is one correct authentication shape for every Studio host.
 
@@ -62,9 +71,9 @@ There is also a shared `Elsa.Studio.Authentication.OpenIdConnect` module for com
 
 That split is a good thing. It makes the security boundary visible in code.
 
-## Blazor Server
+## How does Blazor Server authentication work?
 
-For Blazor Server, the setup uses the normal ASP.NET Core OpenID Connect handler plus cookies.
+For Blazor Server, Elsa stays close to ASP.NET Core's normal web-app model: cookie authentication plus the OpenID Connect handler. Microsoft documents that server-side OIDC apps can save tokens in authentication properties when `SaveTokens` is enabled ([Microsoft Learn](https://learn.microsoft.com/en-us/aspnet/core/security/authentication/configure-oidc-web-authentication), 2026), and Elsa's server package builds on that behavior.
 
 The shape looks like this:
 
@@ -105,9 +114,9 @@ There are still the usual real-world caveats:
 
 None of this is Elsa-specific invention. That is the point. The module tries to stay close to the ASP.NET Core authentication model instead of creating its own.
 
-## WebAssembly
+## How does WebAssembly authentication work?
 
-For Blazor WebAssembly, the setup is similar at the option level, but different underneath:
+For Blazor WebAssembly, the option names look similar, but the runtime model is different. Blazor WebAssembly applications are public browser clients, and Microsoft's authentication package supplies the `RemoteAuthenticatorView`, token acquisition, and browser-side OIDC plumbing ([Microsoft Learn](https://learn.microsoft.com/en-us/aspnet/core/blazor/security/webassembly/standalone-with-authentication-library), 2026).
 
 ```csharp
 using Elsa.Studio.Authentication.OpenIdConnect.BlazorWasm.Extensions;
@@ -138,9 +147,9 @@ If that script is missing, startup fails with the familiar `AuthenticationServic
 
 The default Elsa Studio shell already accounts for this. The caveat mostly matters when you compose your own host.
 
-## Authentication scopes are not always API scopes
+## Why separate authentication scopes from API scopes?
 
-One detail in the 3.7 model that I like is the split between `AuthenticationScopes` and `BackendApiScopes`.
+Elsa separates `AuthenticationScopes` from `BackendApiScopes` because sign-in and backend API access are not always the same token request. Microsoft Entra ID v2.0, for example, expects scopes in one request to belong to a single resource, which makes separate backend API scopes a practical modeling choice.
 
 The sign-in flow usually needs identity scopes:
 
@@ -158,9 +167,9 @@ That distinction matters with providers such as Microsoft Entra ID, where a sing
 
 It also matches how Studio is used in production. Studio is not the identity provider. It is an authenticated client calling a backend workflow API.
 
-## What this does not solve
+## What does OIDC not solve?
 
-OpenID Connect support does not remove the need to configure your identity provider correctly.
+OpenID Connect support does not remove the need to configure your identity provider correctly. The protocol gives Studio an identity and token acquisition path; it does not design your tenant model, role mappings, reverse-proxy behavior, or resource-level authorization rules.
 
 You still need matching redirect URIs. For WebAssembly, that usually means `/authentication/login-callback`. For Blazor Server, the default is `/signin-oidc`. If you deploy Studio under a reverse proxy path, you need to be careful with externally visible URLs and callback paths. There is already follow-up work around sub-path deployments in [`elsa-studio` PR #809](https://github.com/elsa-workflows/elsa-studio/pull/809), which is a good reminder that authentication bugs often appear at the hosting boundary rather than inside the workflow engine.
 
@@ -170,11 +179,11 @@ OIDC answers who the user is and how Studio gets a token. It does not automatica
 
 That distinction is worth keeping clear.
 
-## Why this matters
+## Why does this matter for Studio?
 
-For a workflow system, Studio is not just an admin page.
+For a workflow system, Studio is not just an admin page. It is an operational surface for inspecting running processes, changing definitions, retrying failed work, and sometimes handling sensitive business flows.
 
-It is where people inspect running processes, change workflow definitions, retry failed work, view incidents, and sometimes operate sensitive business flows. In many organizations, that surface needs to sit behind the same identity system as the rest of the internal platform.
+In many organizations, that surface needs to sit behind the same identity system as the rest of the internal platform.
 
 The 3.7 OIDC work makes that less of a special case.
 

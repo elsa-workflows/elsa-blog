@@ -1,9 +1,9 @@
 ---
-title: "Elsa Studio Has a Real Dashboard Now"
+title: "Elsa Studio Dashboard: Split on Purpose"
 slug: "the-elsa-studio-dashboard-is-split-on-purpose"
-description: "Elsa 3.8 turns Studio's sparse home page into a real operational dashboard with workflow and diagnostics widgets, backed by a modular composition model."
+description: "Elsa 3.8 gives Studio a real operational dashboard, split into a shell plus workflow and diagnostics companion modules so widgets stay modular."
 publishedAt: "2026-06-08"
-updatedAt: null
+updatedAt: "2026-06-30"
 status: "published"
 authors:
   - "sipke"
@@ -15,155 +15,98 @@ tags:
   - "extensibility"
 featuredImage: "../assets/2026-06-08-the-elsa-studio-dashboard-is-split-on-purpose/featured.png"
 featuredImageAlt: "Editorial illustration of a modular operational dashboard assembled from workflow and diagnostics panels around a central workflow view"
-seoTitle: "Elsa Studio Has a Real Dashboard Now"
-seoDescription: "Elsa 3.8 replaces Studio's mostly empty dashboard with a real operational surface: metrics, trends, recent activity, hotspots, and diagnostics widgets."
+seoTitle: "Elsa Studio Dashboard: Split on Purpose"
+seoDescription: "Elsa 3.8 gives Studio a real operational dashboard, split into a shell plus workflow and diagnostics companion modules so widgets stay modular."
 redirectFrom: []
 ---
 
-# Elsa Studio Has a Real Dashboard Now
+# Elsa Studio Dashboard: Split on Purpose
 
-Until recently, the Elsa Studio dashboard was basically a heading, a docs link, and a lot of empty space.
+Elsa 3.8 turns the Studio home page into an operational dashboard. More importantly, it does so with a split architecture: the dashboard module owns the shell and widget contracts, while workflow and diagnostics modules contribute their own data and widgets.
 
-That is not a complaint so much as a phase.
+The work landed across both repositories:
 
-Dashboards are easy to postpone when the harder work is elsewhere: workflow execution, designer UX, persistence, diagnostics, secrets, alterations, and the rest of the runtime story. You can always come back and build a proper operational surface later.
-
-Elsa 3.8 is that "later".
-
-Studio now has a real dashboard.
-
-Not a placeholder page. Not a mostly empty landing screen with room for future ideas. An actual operational dashboard with workflow metrics, attention items, trends, recent activity, hotspots, and diagnostics widgets.
-
-The work landed across both repositories over the last week:
-
-- [`elsa-core` PR #7681](https://github.com/elsa-workflows/elsa-core/pull/7681) added the operational Dashboard API.
+- [`elsa-core` PR #7681](https://github.com/elsa-workflows/elsa-core/pull/7681) added the Dashboard API.
 - [`elsa-core` PR #7690](https://github.com/elsa-workflows/elsa-core/pull/7690) refactored the API around contributors.
 - [`elsa-core` PR #7692](https://github.com/elsa-workflows/elsa-core/pull/7692) extracted dashboard contributors into companion modules.
-- [`elsa-studio` PR #871](https://github.com/elsa-workflows/elsa-studio/pull/871) replaced the old Studio home with the operational dashboard.
+- [`elsa-studio` PR #871](https://github.com/elsa-workflows/elsa-studio/pull/871) replaced the old Studio home.
 - [`elsa-studio` PR #879](https://github.com/elsa-workflows/elsa-studio/pull/879) refactored dashboard widgets.
 - [`elsa-studio` PR #887](https://github.com/elsa-workflows/elsa-studio/pull/887) added feature-gated dashboard widget composition.
 
-The old page is easy to summarize because it really was that small. Before PR #871, `src/modules/Elsa.Studio.Dashboard/Pages/Index.razor` rendered a page heading, the text "Manage all the things", and a docs link alert. The dashboard feature itself was an empty `FeatureBase` subclass.
+> **Key Takeaways**
+> - Studio now has dashboard zones for metrics, findings, primary panels, diagnostics status, and secondary panels.
+> - Core uses dashboard contributors so workflow and diagnostics modules own their own dashboard data.
+> - Studio companion modules are remote-gated, so widgets appear only when the selected backend advertises the matching feature.
 
-In Elsa 3.8, that module has been completely reworked.
+In our experience, that split is the difference between a dashboard that can grow and a dashboard that slowly becomes a pile of conditional branches.
 
-## What you get now
+## What changed in Studio?
 
-The new dashboard is built as an operational surface rather than a welcome page.
+The old Studio dashboard was effectively a placeholder. The new dashboard has a backend label, runtime status, last-refreshed state, time-range controls, refresh action, and widget zones.
 
-The dashboard shell renders:
-
-- a backend label,
-- runtime status,
-- a last-refreshed indicator,
-- time-range toggles,
-- a refresh action,
-- and widget zones for metrics, findings, primary panels, diagnostics status, and secondary panels.
-
-That layout matters because it gives the page a job. It is there to help you understand what the selected backend is doing right now.
-
-The out-of-box widgets are the part most people will notice first.
-
-The current Studio dashboard tests register seven built-in widgets when the dashboard shell and companion modules are installed:
-
-- workflow metrics
-- needs attention
-- workflow trends
-- recent activity
-- workflow hotspots
-- structured logs
-- console logs
-
-That is a big change from "dashboard as empty real estate".
-
-Here is the new dashboard in the modular server sample, with the workflow and diagnostics widgets visible together:
+The default widget set includes workflow metrics, needs-attention findings, workflow trends, recent activity, workflow hotspots, structured logs, and console logs. That means the dashboard now connects directly to workflow runtime state and diagnostics state.
 
 ![Elsa Studio 3.8 dashboard showing workflow metrics, needs-attention findings, execution trend, recent activity, structured logs, console logs, and workflow hotspots](../assets/2026-06-08-the-elsa-studio-dashboard-is-split-on-purpose/dashboard.png)
 
-The bundle wiring reflects that shift too. The default Studio hosts register `AddDashboardModule`, `AddWorkflowsDashboardModule`, `AddConsoleLogsDashboardModule`, and `AddStructuredLogsDashboardModule`. In other words, this is not just an abstract extension point sitting around waiting for someone else to use it. Elsa itself now ships a richer dashboard story.
+The default Studio hosts register the dashboard shell plus companion modules such as `AddWorkflowsDashboardModule`, `AddConsoleLogsDashboardModule`, and `AddStructuredLogsDashboardModule`. That is why the dashboard feels complete out of the box without making the shell module own every data source.
 
-There is one important nuance: the diagnostics and workflow dashboard companions are remote-gated. If the selected backend does not advertise the matching dashboard shell features, Studio does not pretend the widget is available.
+## Why is the dashboard split?
 
-That is the right tradeoff. A dashboard should feel honest about what the backend can actually provide.
+The **dashboard shell** owns the route, layout, widget zones, refresh/range state, shared widget context, and rendering surface. It should not own workflow metrics, console log summaries, structured log summaries, or every future package's dashboard data.
 
-## Why the rebuild matters
+The test suite protects that boundary. Owner projects for workflows, structured logs, and console logs do not reference `Elsa.Studio.Dashboard` directly. Companion dashboard modules do the integration work.
 
-The visible change is the new dashboard itself.
+That matters because dashboards attract scope. Workflow wants metrics. Diagnostics wants status. Package authors want health cards. Platform modules want queue pressure or tenant status. If one dashboard module imports everything, it becomes the next monolith.
 
-The architectural change is what stops it from turning into a dead end.
+The split keeps ownership where it belongs:
 
-Most dashboards get awkward once every useful module wants to add one more panel. Workflow wants metrics. Diagnostics wants log status. Another package wants health information. Another wants queue pressure. Soon the dashboard module becomes the one place that has to know too much about everything else.
+| Area | Owns |
+| --- | --- |
+| `Elsa.Studio.Dashboard` | dashboard shell, zones, shared contracts |
+| workflow dashboard companion | workflow widgets |
+| console logs dashboard companion | console log widgets |
+| structured logs dashboard companion | structured log widgets |
+| Core Dashboard API | public dashboard routes, permissions, range resolution, contributor orchestration |
+| Core feature contributors | feature-specific dashboard data |
 
-Elsa is deliberately avoiding that.
+## How does Core mirror the split?
 
-The [Studio dashboard README](https://github.com/elsa-workflows/elsa-studio/blob/release/3.8.0/src/modules/Elsa.Studio.Dashboard/README.md) says it plainly: `Elsa.Studio.Dashboard` provides the shell and shared widget contracts, but it does not own workflow, console log, or structured log data loading.
+Core uses dashboard contributors. `Elsa.Dashboard.Api` owns public `/dashboard/*` routes, read permissions, range resolution, and contributor orchestration. Feature modules own the data they contribute.
 
-That work belongs to companion modules.
+For example, the overview endpoint is `GET /dashboard/overview` and requires the dashboard read permission. The workflow dashboard contributor computes running, completed, faulted, suspended, interrupted, incident-bearing, and average-duration metrics from workflow instance summaries.
 
-In practice, the dashboard shell owns things like:
+Diagnostics modules contribute their own dashboard slices. The console logs contributor counts sources, stale or disconnected sources, recent stderr lines, and dropped lines. If console log data is unauthorized or unavailable, it returns that state as dashboard capability data instead of failing the entire dashboard.
 
-- the route,
-- refresh and range state,
-- widget zones,
-- the shared widget context,
-- and the rendering surface.
+That failure isolation is important. One diagnostics contributor should not take down the whole operational surface.
 
-The workflow module contributes workflow widgets. The console logs module contributes console widgets. The structured logs module contributes structured log widgets.
+## What does feature gating protect?
 
-That keeps the dashboard package from turning into an orchestration point for every other package in Studio while still letting the default Elsa bundle feel complete.
+Studio companion modules declare remote backend feature names. The tests verify three of them:
 
-You can see the model directly in the widget registrations:
-
-```csharp
-widgetRegistry.Add(new("dashboard.workflow.metrics", DashboardWidgetZones.Metrics, 100, typeof(DashboardWorkflowMetricsWidget), "Workflow metrics", PayloadKind: "WorkflowInstances"));
-widgetRegistry.Add(new("diagnostics.structured-logs", DashboardWidgetZones.DiagnosticsStatus, 100, typeof(StructuredLogsDashboardWidget), "Structured logs", RequiredBackendCapability: "StructuredLogs", PayloadKind: "Diagnostics.StructuredLogs"));
-widgetRegistry.Add(new("diagnostics.console-logs", DashboardWidgetZones.DiagnosticsStatus, 200, typeof(ConsoleLogsDashboardWidget), "Console logs", RequiredBackendCapability: "ConsoleLogs", PayloadKind: "Diagnostics.ConsoleLogs"));
+```text
+Elsa.Workflows.Runtime.Dashboard.ShellFeatures.WorkflowRuntimeDashboard
+Elsa.Diagnostics.StructuredLogs.Dashboard.ShellFeatures.StructuredLogsDashboard
+Elsa.Diagnostics.ConsoleLogs.Dashboard.ShellFeatures.ConsoleLogsDashboard
 ```
 
-That sounds simple, but it means the dashboard host only needs to understand zones and descriptors. It does not need compile-time knowledge of every widget it might ever render.
+That gives Studio a clean answer to a common modular-host problem: the UI package may be installed while the selected backend does not support the corresponding data.
 
-## The backend follows the same pattern
+The answer is not to render a broken card. The companion feature initializes when the backend advertises the matching capability. Otherwise, the dashboard shell remains coherent and the unsupported slice stays out of view.
 
-The backend side mirrors the same idea.
+That pairs naturally with the shell-feature model described in [Configuring Elsa with Shell Features](/blog/configuring-elsa-with-shell-features).
 
-The [Dashboard API README](https://github.com/elsa-workflows/elsa-core/blob/release/3.8.0/src/modules/Elsa.Dashboard.Api/README.md) describes `Elsa.Dashboard.Api` as the owner of public `/dashboard/*` routes, permissions, range resolution, and contributor orchestration. Feature modules own the data they contribute.
+## Why does this matter for diagnostics?
 
-That is what `IDashboardContributor` is for.
+The dashboard now makes diagnostics visible without merging every diagnostics surface into one page. Structured logs, console logs, and OpenTelemetry still keep their dedicated views. The dashboard gives operators status and navigation.
 
-Instead of teaching the dashboard API module how workflows, console logs, and structured logs all work internally, those modules contribute the slices they own:
+For example, a dashboard card can show stale console log sources or dropped lines, then point the operator to [Console Logs in Elsa 3.8](/blog/console-logs-in-elsa-3-8). A structured logs card can summarize availability or pressure, then point to [Structured Logs in Elsa 3.8](/blog/structured-logs-in-elsa-3-8).
 
-- overview data,
-- findings,
-- trends,
-- recent activity,
-- and hotspots.
+That is the right level for a dashboard. It should tell you where to look, not replace every investigative surface.
 
-The nice part is that contributor failures are isolated. One diagnostics contributor can fail without taking down the whole dashboard response.
+## What should extension authors copy?
 
-That is exactly the kind of behavior you want from an operational page.
+Extension authors should copy the ownership pattern, not just the UI shape. Put shared shell behavior in the dashboard module. Put feature-specific data loading, widgets, and backend capability requirements in companion modules.
 
-## Why the shell split is still worth knowing about
+If a module owns queue health, let that module contribute queue health. If a package owns a runtime integration, let that package contribute its dashboard slice. Keep the dashboard shell boring.
 
-If you are just using Studio, the headline is simple: Elsa 3.8 gives you a real dashboard instead of a mostly empty one.
-
-If you are extending Studio, the more interesting detail is how Elsa got there.
-
-For example, the workflow dashboard companion feature in Studio is marked with:
-
-```csharp
-[RemoteFeature("Elsa.Workflows.Runtime.Dashboard.ShellFeatures.WorkflowRuntimeDashboard")]
-```
-
-The console and structured log dashboard companions do the same thing with their own remote feature names.
-
-That gives Studio a clean answer to a common modular-host problem: what should happen when the UI package is installed, but the backend feature is not?
-
-The answer is not "render a broken card and explain it later".
-
-The companion feature only initializes when the backend advertises the matching capability. So the dashboard shell can stay installed and coherent while individual slices appear only when they are actually supported.
-
-If you are building your own Elsa-based module, that is a much better boundary than hard-coding one big dashboard page with a growing list of conditional branches.
-
-For most readers, though, the main point is more concrete than that.
-
-Elsa Studio now has a dashboard that deserves to be called a dashboard. And it got there without painting itself into a corner for the next round of widgets.
+For most users, the headline is simpler: Elsa Studio now has a dashboard that deserves the name. For teams extending Studio, the more important point is that the dashboard got better without becoming a central dependency for every module that wants to be seen.

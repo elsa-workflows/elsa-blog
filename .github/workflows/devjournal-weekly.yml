@@ -1,0 +1,120 @@
+name: DevJournal Weekly
+
+# Files a weekly "Building Elsa 4" issue (with an auto-extracted research brief)
+# and assigns it to the Copilot coding agent, which writes the post and opens a PR.
+#
+# Token note: assignment performed with the default GITHUB_TOKEN may not reliably
+# trigger the Copilot coding agent. Add a repo/org secret `DEVJOURNAL_PAT`
+# (a PAT or GitHub App token with Issues: write, Contents: read) for dependable
+# triggering. The workflow falls back to GITHUB_TOKEN if the secret is absent.
+
+on:
+  schedule:
+    - cron: "0 7 * * 1" # Mondays 07:00 UTC
+  workflow_dispatch:
+    inputs:
+      since:
+        description: "Window start YYYY-MM-DD (inclusive). Blank = last complete week."
+        required: false
+      until:
+        description: "Window end YYYY-MM-DD (exclusive). Blank = auto."
+        required: false
+      week:
+        description: "Week-number label override. Blank = computed from 2026-05-08."
+        required: false
+      dry_run:
+        description: "Extract and assemble only; do not create an issue."
+        type: boolean
+        default: false
+      no_assign:
+        description: "Create the issue but do not assign Copilot."
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: devjournal-weekly
+  cancel-in-progress: false
+
+jobs:
+  devjournal:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout elsa-blog
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Clone source repositories (full history)
+        run: |
+          set -euo pipefail
+          git clone --no-tags https://github.com/elsa-workflows/elsa-foundation.git "$RUNNER_TEMP/elsa-foundation"
+          git clone --no-tags https://github.com/elsa-workflows/elsa-foundation-studio.git "$RUNNER_TEMP/elsa-foundation-studio"
+
+      - name: Compute window
+        id: window
+        run: |
+          set -euo pipefail
+          python3 tools/devjournal/window.py \
+            ${{ inputs.since && format('--since {0}', inputs.since) || '' }} \
+            ${{ inputs.until && format('--until {0}', inputs.until) || '' }} \
+            ${{ inputs.week && format('--week {0}', inputs.week) || '' }} \
+            >> "$GITHUB_OUTPUT"
+
+      - name: Extract research brief
+        env:
+          ELSA_FOUNDATION: ${{ runner.temp }}/elsa-foundation
+          ELSA_STUDIO: ${{ runner.temp }}/elsa-foundation-studio
+        run: |
+          set -euo pipefail
+          python3 tools/devjournal/devjournal_extract.py \
+            --since "${{ steps.window.outputs.since }}" \
+            --until "${{ steps.window.outputs.until }}" \
+            -o "$RUNNER_TEMP/brief.md"
+          echo "Brief size: $(wc -c < "$RUNNER_TEMP/brief.md") bytes"
+
+      - name: Assemble issue body
+        run: |
+          set -euo pipefail
+          python3 tools/devjournal/assemble_issue_body.py \
+            --week "${{ steps.window.outputs.week }}" \
+            --since "${{ steps.window.outputs.since }}" \
+            --until "${{ steps.window.outputs.until }}" \
+            --slug-date "${{ steps.window.outputs.until }}" \
+            --brief-file "$RUNNER_TEMP/brief.md" \
+            > "$RUNNER_TEMP/issue-body.md"
+
+      - name: Upload brief artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: devjournal-week-${{ steps.window.outputs.week }}
+          path: |
+            ${{ runner.temp }}/brief.md
+            ${{ runner.temp }}/issue-body.md
+          retention-days: 30
+
+      - name: File issue and assign Copilot
+        if: ${{ !inputs.dry_run }}
+        env:
+          GH_TOKEN: ${{ secrets.DEVJOURNAL_PAT || github.token }}
+        run: |
+          set -euo pipefail
+          python3 tools/devjournal/file_devjournal_issue.py \
+            --repo "${{ github.repository }}" \
+            --title "Building Elsa 4 · Week ${{ steps.window.outputs.week }} (${{ steps.window.outputs.since }} → ${{ steps.window.outputs.until }})" \
+            --title-prefix "Building Elsa 4 · Week ${{ steps.window.outputs.week }}" \
+            --body-file "$RUNNER_TEMP/issue-body.md" \
+            --label "devjournal" \
+            ${{ inputs.no_assign && '--no-assign' || '' }}
+
+      - name: Dry-run summary
+        if: ${{ inputs.dry_run }}
+        run: |
+          echo "Dry run: issue not created. Brief and issue body uploaded as artifacts."
+          echo "Window: week ${{ steps.window.outputs.week }} (${{ steps.window.outputs.since }} → ${{ steps.window.outputs.until }})"

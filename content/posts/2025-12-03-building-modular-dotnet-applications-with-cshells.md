@@ -1,9 +1,9 @@
 ---
-title: "Building Modular .NET Applications with CShells"
+title: "Building Modular .NET Applications with CShells"
 slug: "building-modular-dotnet-applications-with-cshells"
-description: "A lightweight, modular shell system for multi-tenant .NET applications."
+description: "CShells is a lightweight shell and feature system for .NET applications that need modular features, tenant-specific configuration, and per-shell dependency injection."
 publishedAt: "2025-12-03"
-updatedAt: null
+updatedAt: "2026-06-30"
 status: "published"
 authors:
   - "sipke"
@@ -15,13 +15,287 @@ tags:
   - "docker"
   - "workflow"
   - "multitenancy"
+  - "modularity"
 featuredImage: "https://cdn-images-1.medium.com/max/800/1*hccxAtUbB0SNsjrh8yXc3Q.png"
-featuredImageAlt: "Building Modular .NET Applications with CShells"
+featuredImageAlt: "Abstract modular shell architecture for multi-tenant .NET applications"
 sourceName: "Medium"
 sourceUrl: "https://medium.com/@sipkeschoorstra/building-modular-net-applications-with-cshells-521782089a0b"
-seoTitle: "Building Modular .NET Applications with CShells"
-seoDescription: "A lightweight, modular shell system for multi-tenant .NET applications."
+seoTitle: "Building Modular .NET Applications with CShells"
+seoDescription: "CShells gives .NET apps modular features, shell-specific configuration, route-scoped endpoints, and isolated DI containers for tenants or runtime slices."
 redirectFrom: []
 ---
 
-<section><div><div><h3>Building Modular .NET Applications with CShells</h3><h4><em>A lightweight, modular shell system for multi-tenant .NET applications.</em></h4><figure><img data-image-id="1*hccxAtUbB0SNsjrh8yXc3Q.png" data-width="2752" data-height="1449" data-is-featured="true" src="https://cdn-images-1.medium.com/max/800/1*hccxAtUbB0SNsjrh8yXc3Q.png"></figure><p>For a while now I’ve wanted <a href="https://docs.elsaworkflows.io/" rel="noopener" target="_blank">Elsa Workflows</a> to support simple feature toggling and proper multi-tenancy where each tenant gets its own isolated set of services. Coming from the <a href="https://orchardcore.net/" rel="noopener" target="_blank">Orchard Core</a> world, the shells concept has always made sense to me: wrap a service collection, let a shell manager rebuild it at runtime, and you get clean per-tenant isolation.</p><p><a href="https://www.cshells.io/" rel="noopener" target="_blank">CShells</a> is a lightweight take on that idea, made to be easy to drop into any .NET application.</p><h3>What is CShells?</h3><p>CShells introduces the idea of shells, which are isolated DI containers with their own configuration and enabled features. In practice, CShells lets you:</p><ul><li>Define features as self-contained modules with their own services and endpoints.</li><li>Group features into shells representing tenants, environments, or pricing tiers.</li><li>Configure shells through JSON files, <code>appsettings.json</code>, or code.</li><li>Isolate dependencies per shell.</li><li>Add or update shells while the app is running.</li></ul><p>Each shell operates independently, so you can run multiple tenants or environments in a single application without conflicts.</p><h3>Why CShells?</h3><h4>How it started</h4><p>CShells didn’t come out of a production refactor. It started as something I knew I would eventually need for Elsa Workflows, even though I haven’t integrated it there yet. The goal was to have a clean, flexible way to enable or disable features without rebuilding Docker images or maintaining separate versions. CShells is still fresh, basically a preview release. But the more I worked on it, the more I figured it might be useful beyond the original Elsa-related idea. In a way, it mirrors Elsa’s own origin: just like Elsa grew out of a feature in Orchard Core, CShells now grows out of Orchard Core’s shells concept.</p><h4>1. Multi-tenant applications without custom plumbing</h4><p>Multi-tenant systems usually require a lot of custom work around routing, middleware, and service isolation. With CShells, each tenant is simply a shell with its own feature set and DI container. For example:</p><pre data-code-block-mode="1" spellcheck="false" data-code-block-lang="json"><span><span>// Tenant A gets Stripe payments and email notifications</span><br /><span>{</span><br />  <span>&quot;name&quot;</span><span>:</span> <span>&quot;TenantA&quot;</span><span>,</span><br />  <span>&quot;features&quot;</span><span>:</span> <span>[</span><span>&quot;Core&quot;</span><span>,</span> <span>&quot;StripePayment&quot;</span><span>,</span> <span>&quot;EmailNotification&quot;</span><span>]</span><span>,</span><br />  <span>&quot;properties&quot;</span><span>:</span> <span>{</span><br />    <span>&quot;WebRouting&quot;</span><span>:</span> <span>{</span><br />      <span>&quot;Path&quot;</span><span>:</span> <span>&quot;tenant-a&quot;</span><br />    <span>}</span><br />  <span>}</span><br /><span>}</span></span></pre><pre>// Tenant B gets PayPal, SMS and fraud detection<br>{<br>  &quot;name&quot;: &quot;TenantB&quot;,<br>  &quot;features&quot;: [&quot;Core&quot;, &quot;PayPalPayment&quot;, &quot;SmsNotification&quot;, &quot;FraudDetection&quot;],<br>  &quot;properties&quot;: {<br>    &quot;WebRouting&quot;: {<br>      &quot;Path&quot;: &quot;tenant-b&quot;<br>    }<br>  }<br>}</pre><h4>2. Feature toggles with real modularity</h4><p>Feature flags work for simple switches, but they break down when features have their own services and endpoints. CShells treats features as proper modules with DI support and handles their internal dependencies automatically.</p><h4>3. Environment-specific configurations</h4><p>Even single-tenant apps can benefit from shells. You can define different shells for development, staging, and production with different features enabled. Debugging tools in dev but not in prod? Just configure a different shell per environment.</p><h4>4. Runtime reconfiguration</h4><p>CShells can add, update, or remove shells at runtime without restarting the app. This is great for SaaS platforms where new tenants or updated configurations need to be applied on the fly.</p><h3>How to use CShells</h3><h4>Step 1: Define your features</h4><p>Implement <code>IWebShellFeature</code> and decorate it with <code>[ShellFeature]</code>.</p><pre data-code-block-mode="2" spellcheck="false" data-code-block-lang="csharp"><span><span>using</span> CShells.Features;<br /><span>using</span> CShells.AspNetCore.Features;<br /><br />[<span>ShellFeature(<span>&quot;Core&quot;</span>, DisplayName = <span>&quot;Core Services&quot;</span>)</span>]<br /><span>public</span> <span>class</span> <span>CoreFeature</span> : <span>IWebShellFeature</span><br />{<br />    <span><span>public</span> <span>void</span> <span>ConfigureServices</span>(<span>IServiceCollection services</span>)</span><br />    {<br />        services.AddSingleton&lt;IAuditLogger, AuditLogger&gt;();<br />        services.AddSingleton&lt;ITimeService, TimeService&gt;();<br />    }<br />    <span><span>public</span> <span>void</span> <span>MapEndpoints</span>(<span><br />        IEndpointRouteBuilder endpoints,<br />        IHostEnvironment? environment</span>)</span><br />    {<br />        endpoints.MapGet(<span>&quot;&quot;</span>, () =&gt; <span>new</span> { Message = <span>&quot;Hello from Core&quot;</span> });<br />    }<br />}</span></pre><p>Features can depend on other features:</p><pre data-code-block-mode="1" spellcheck="false" data-code-block-lang="csharp"><span>[<span>ShellFeature(<span>&quot;Weather&quot;</span>, DependsOn = [<span>&quot;Core&quot;</span></span>])]<br /><span>public</span> <span>class</span> <span>WeatherFeature</span> : <span>IWebShellFeature</span><br />{<br />    <span><span>public</span> <span>void</span> <span>ConfigureServices</span>(<span>IServiceCollection services</span>)</span><br />    {<br />        services.AddSingleton&lt;IWeatherService, WeatherService&gt;();<br />    }<br /><br />    <span><span>public</span> <span>void</span> <span>MapEndpoints</span>(<span><br />        IEndpointRouteBuilder endpoints,<br />        IHostEnvironment? environment</span>)</span><br />    {<br />        endpoints.MapGet(<span>&quot;weather&quot;</span>, <br />          (IWeatherService svc) =&gt; svc.GetForecast());<br />    }<br />}</span></pre><h4>Step 2: Configure your shells</h4><p>You can configure shells in JSON files:</p><pre data-code-block-mode="1" spellcheck="false" data-code-block-lang="json"><span><span>// Shells/Default.json</span><br /><span>{</span><br />  <span>&quot;name&quot;</span><span>:</span> <span>&quot;Default&quot;</span><span>,</span><br />  <span>&quot;features&quot;</span><span>:</span> <span>[</span><span>&quot;Core&quot;</span><span>,</span> <span>&quot;Weather&quot;</span><span>]</span><br /><span>}</span></span></pre><p>Or via appsettings:</p><pre data-code-block-mode="1" spellcheck="false" data-code-block-lang="json"><span><span>{</span><br />  <span>&quot;CShells&quot;</span><span>:</span> <span>{</span><br />    <span>&quot;Shells&quot;</span><span>:</span> <span>[</span><br />      <span>{</span><br />        <span>&quot;Name&quot;</span><span>:</span> <span>&quot;Default&quot;</span><span>,</span><br />        <span>&quot;Features&quot;</span><span>:</span> <span>[</span><span>&quot;Core&quot;</span><span>,</span> <span>&quot;Weather&quot;</span><span>]</span><br />      <span>}</span><br />    <span>]</span><br />  <span>}</span><br /><span>}</span></span></pre><p>Or in code:</p><pre data-code-block-mode="1" spellcheck="false" data-code-block-lang="javascript"><span>builder.<span>AddShells</span>(<span><span>cshells</span> =&gt;</span><br />{<br />    cshells.<span>AddShell</span>(<span>&quot;Default&quot;</span>, <span><span>shell</span> =&gt;</span> shell<br />        .<span>WithFeatures</span>(<span>&quot;Core&quot;</span>, <span>&quot;Weather&quot;</span>);<br />});</span></pre><h4>Step 3: Wire it up in Program.cs</h4><pre data-code-block-mode="2" spellcheck="false" data-code-block-lang="csharp"><span><span>using</span> CShells.AspNetCore.Extensions;<br /><br /><span>var</span> builder = WebApplication.CreateBuilder(args);<br /><br /><span>// Register CShells. Reads from appsettings.json by default</span><br />builder.AddShells();<br /><br /><span>var</span> app = builder.Build();<br />app.UseHttpsRedirection();<br />app.UseRouting();<br /><br /><span>// For routing HTTP requests to a shell.</span><br />app.MapShells();<br /><br />app.Run();</span></pre><h3>Background services</h3><p>If you need background work per shell:</p><pre data-code-block-mode="1" spellcheck="false" data-code-block-lang="csharp"><span><span>public</span> <span>class</span> <span>ShellBackgroundWorker</span> : <span>BackgroundService</span><br />{<br />    <span>private</span> <span>readonly</span> IShellHost _shellHost;<br />    <span>private</span> <span>readonly</span> IShellContextScopeFactory _scopeFactory;<br /><br />    <span><span>public</span> <span>ShellBackgroundWorker</span>(<span><br />        IShellHost shellHost,<br />        IShellContextScopeFactory scopeFactory</span>)</span><br />    {<br />        _shellHost = shellHost;<br />        _scopeFactory = scopeFactory;<br />    }<br />    <span><span>protected</span> <span>override</span> <span>async</span> Task <span>ExecuteAsync</span>(<span>CancellationToken stoppingToken</span>)</span><br />    {<br />        <span>while</span> (!stoppingToken.IsCancellationRequested)<br />        {<br />            <span>foreach</span> (<span>var</span> shell <span>in</span> _shellHost.AllShells)<br />            {<br />                <span>using</span> <span>var</span> scope = _scopeFactory.CreateScope(shell);<br />                <span>var</span> service = scope.ServiceProvider<br />                    .GetService&lt;IMyService&gt;();<br />                service?.Execute();<br />            }<br />            <span>await</span> Task.Delay(TimeSpan.FromSeconds(<span>30</span>), stoppingToken);<br />        }<br />    }<br />}</span></pre><h3>Real-world use cases</h3><ul><li>Multi-tenant SaaS platforms</li><li>Modular monoliths</li><li>White-label deployments</li><li>API gateways / BFF layers</li><li>Environment-specific setups</li></ul><h3>Key benefits</h3><ul><li>Per-tenant features</li><li>Runtime reconfiguration</li><li>Dependency isolation</li><li>Clean architecture</li><li>Flexible configuration</li><li>Minimal boilerplate</li></ul><h3>Getting started</h3><p>CShells is open source on <a href="https://github.com/sfmskywalker/cshells" rel="noopener" target="_blank">GitHub</a>. It includes a sample application (<code>CShells.Workbench</code>) that demonstrates multi-tenant feature configuration.</p><p>To try CShells:</p><ol><li>Install the NuGet package: <code>CShells.AspNetCore</code></li><li>Read the docs at <a href="https://www.cshells.io/" rel="noopener" target="_blank">https://www.cshells.io/</a></li><li>Explore the sample app</li></ol></div></div></section><section><div><div><p><a href="https://github.com/sfmskywalker/cshells/blob/main/LICENSE" rel="noopener" target="_blank">CShells is MIT licensed</a> and actively maintained. Contributions and feedback are welcome on <a href="https://github.com/sfmskywalker/cshells" rel="noopener" target="_blank">GitHub</a>.</p></div></div></section>
+# Building Modular .NET Applications with CShells
+
+I have wanted Elsa Workflows to support cleaner feature toggling and stronger tenant isolation for a long time.
+
+Coming from the [Orchard Core](https://orchardcore.net/) world, the shell concept has always felt natural. A shell gives you a boundary around a service provider, a feature set, configuration, routing, and lifecycle. That boundary is useful when one host process needs to behave like several different applications.
+
+[CShells](https://github.com/sfmskywalker/cshells) is my lightweight take on that idea for regular .NET applications.
+
+It is not trying to be a CMS. It is not trying to be a complete application framework. It is a shell and feature system you can drop into an ASP.NET Core application when feature flags are no longer enough.
+
+> **Key Takeaways**
+> - CShells models each tenant, environment, plan, or runtime slice as a shell with its own enabled features and configuration.
+> - Features register services, and web features can map shell-scoped endpoints through `IWebShellFeature`.
+> - The current API supports appsettings, JSON files through FluentStorage, and code-first shell configuration.
+
+## What is CShells?
+
+The [CShells README](https://github.com/sfmskywalker/cshells/blob/main/README.md) describes the project as a shell and feature system for .NET projects with per-shell dependency injection and config-driven features. In practical terms, a shell is an isolated runtime slice inside one host application.
+
+That slice can represent a tenant. It can also represent an environment, a pricing plan, a white-label deployment, or a backend-for-frontend surface.
+
+Each shell gets:
+
+- its own shell identity,
+- its own enabled feature list,
+- its own shell-specific configuration,
+- its own service provider,
+- and, in ASP.NET Core, route-scoped endpoint registration.
+
+This is different from a simple feature flag.
+
+A feature flag usually turns a branch on or off inside an already-built application. CShells lets a feature bring services and endpoints with it, then enables that feature only for the shells that need it.
+
+## Why build this instead of using feature flags?
+
+Feature flags are great until the feature owns real application shape. Once a feature has services, endpoint mappings, options, background behavior, dependencies, and tenant-specific configuration, a boolean check starts to feel too small.
+
+CShells is for that middle ground.
+
+You may not need a full modular framework. You may also not want every tenant to share the same dependency graph. A shell gives you a place to say: this tenant gets these features, with these settings, under this route.
+
+That was the Elsa-related motivation. I wanted a clean way to enable and isolate capabilities without rebuilding Docker images or maintaining several host variants.
+
+The idea is useful outside Elsa too. Any modular .NET application can run into the same pressure:
+
+- one customer gets Stripe and email,
+- another gets PayPal and SMS,
+- an admin surface needs extra endpoints,
+- a development shell enables diagnostics,
+- and a production shell keeps those diagnostics out.
+
+CShells turns those combinations into configuration instead of scattered conditional code.
+
+## How do you define a feature?
+
+For non-web features, implement `IShellFeature` and register services. For web features, implement [`IWebShellFeature`](https://github.com/sfmskywalker/cshells/blob/main/src/CShells.AspNetCore.Abstractions/Features/IWebShellFeature.cs), which adds `MapEndpoints`.
+
+The current `IWebShellFeature` contract is intentionally small: configure services, then map endpoints inside the shell route scope.
+
+```csharp
+using CShells.AspNetCore.Features;
+
+public class WeatherFeature : IWebShellFeature
+{
+    public void ConfigureServices(IServiceCollection services)
+    {
+        services.AddSingleton<IWeatherService, WeatherService>();
+    }
+
+    public void MapEndpoints(
+        IEndpointRouteBuilder endpoints,
+        IHostEnvironment? environment)
+    {
+        endpoints.MapGet("weather", (IWeatherService service) =>
+            service.GetForecast());
+    }
+}
+```
+
+The `[ShellFeature]` attribute is optional. You use it when you need an explicit name, display name, dependencies, or metadata.
+
+```csharp
+using CShells.Features;
+
+[ShellFeature("Weather", DisplayName = "Weather API", DependsOn = ["Core"])]
+public class WeatherFeature : IWebShellFeature
+{
+    public void ConfigureServices(IServiceCollection services)
+    {
+        services.AddSingleton<IWeatherService, WeatherService>();
+    }
+
+    public void MapEndpoints(
+        IEndpointRouteBuilder endpoints,
+        IHostEnvironment? environment)
+    {
+        endpoints.MapGet("weather", (IWeatherService service) =>
+            service.GetForecast());
+    }
+}
+```
+
+That dependency matters. CShells resolves feature dependencies and orders them before building the shell. The feature can stay small, but the runtime still knows that `Weather` depends on `Core`.
+
+## How do you configure shells?
+
+The default configuration section is `CShells`. The current README shows shell names as keys under `CShells:Shells`, with features represented as a map.
+
+```json
+{
+  "CShells": {
+    "Shells": {
+      "Default": {
+        "Features": {
+          "Core": true,
+          "Weather": true
+        },
+        "Configuration": {
+          "WebRouting": {
+            "Path": ""
+          }
+        }
+      },
+      "Admin": {
+        "Features": {
+          "Core": true,
+          "Admin": {
+            "MaxUsers": 100,
+            "EnableAuditLog": true
+          }
+        },
+        "Configuration": {
+          "WebRouting": {
+            "Path": "admin",
+            "RoutePrefix": "api/v1"
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+That format is more expressive than the first preview examples because a feature entry can now carry settings. In other words, a shell can enable `Admin` and give it shell-specific configuration at the same time.
+
+You can also configure shells in code:
+
+```csharp
+builder.AddShells(cshells =>
+{
+    cshells.AddShell("Default", shell => shell
+        .WithFeatures("Core", "Weather")
+        .WithConfiguration("WebRouting:Path", ""));
+
+    cshells.AddShell("Admin", shell => shell
+        .WithFeature("Core")
+        .WithFeature("Admin", settings => settings
+            .WithSetting("MaxUsers", 100)
+            .WithSetting("EnableAuditLog", true))
+        .WithConfiguration("WebRouting:Path", "admin")
+        .WithConfiguration("WebRouting:RoutePrefix", "api/v1"));
+});
+```
+
+The [`WithFeatures`](https://github.com/sfmskywalker/cshells/blob/main/src/CShells/Configuration/ShellBuilder.cs) API accepts feature names, feature types, or feature entries. That gives hosts a practical path from simple string-based configuration to more strongly typed setup where it helps.
+
+## What does `MapShells` do?
+
+In ASP.NET Core, `MapShells()` is the handoff point between the host and the shell runtime. The current implementation wires shell resolution middleware, captures endpoint builder access, and registers the dynamic shell endpoint data source.
+
+In normal application code, setup is intentionally boring:
+
+```csharp
+var builder = WebApplication.CreateBuilder(args);
+
+builder.AddShells();
+
+var app = builder.Build();
+
+app.MapShells();
+
+app.Run();
+```
+
+After that, endpoints contributed by web features are available through the shell's route scope. If the `Admin` shell uses `WebRouting:Path = "admin"`, its web feature endpoints are exposed under that shell path.
+
+That is the part I care about most: features do not need to know every route prefix for every tenant. They map their own endpoints. The shell decides where that endpoint lives.
+
+## How does this help with background work?
+
+HTTP routing is only one side of modular applications. Background workers often need the same shell boundary.
+
+CShells provides `IShellContextScopeFactory` for this. A background service can enumerate applied shells through `IShellHost`, create a shell scope, and resolve the services that belong to that shell.
+
+```csharp
+public class DataSyncWorker : BackgroundService
+{
+    private readonly IShellHost shellHost;
+    private readonly IShellContextScopeFactory scopeFactory;
+
+    public DataSyncWorker(
+        IShellHost shellHost,
+        IShellContextScopeFactory scopeFactory)
+    {
+        this.shellHost = shellHost;
+        this.scopeFactory = scopeFactory;
+    }
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            foreach (var shell in shellHost.AllShells)
+            {
+                using var scope = scopeFactory.CreateScope(shell);
+                var service = scope.ServiceProvider.GetService<IDataSyncService>();
+
+                if (service is null)
+                    continue;
+
+                await service.SyncAsync(stoppingToken);
+            }
+
+            await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
+        }
+    }
+}
+```
+
+The important detail is the nullable service lookup. Not every shell has every feature. A worker should be able to skip shells that do not have the feature it needs.
+
+That is how shell isolation should feel in practice. The background worker can run once at the host level, but the actual work happens inside each shell's service provider.
+
+## When is CShells a good fit?
+
+CShells is useful when the application has modular pressure but you still want a single host process.
+
+Good fits include:
+
+- multi-tenant SaaS platforms,
+- modular monoliths,
+- white-label deployments,
+- API gateways or BFF layers,
+- environment-specific feature sets,
+- plugin-style line-of-business applications,
+- and framework-style hosts where modules need clean boundaries.
+
+It is not something I would add to every small application. If a simple `if` statement or configuration flag is enough, use that. The shell model earns its keep when the feature brings services, endpoints, configuration, and lifecycle with it.
+
+## Where does this connect back to Elsa?
+
+Elsa is modular by nature. Workflows, Studio modules, diagnostics, persistence, secrets, and runtime features all benefit from clear boundaries.
+
+CShells is not yet "the Elsa hosting model" in this post. It started as a separate experiment inspired by a problem I expect Elsa and Elsa-based applications to keep running into: how do you give each tenant or runtime slice the right capabilities without turning the host into a pile of conditional registrations?
+
+That same question shows up in later posts about [configuring Elsa with shell features](https://www.elsaworkflows.io/blog/configuring-elsa-with-shell-features) and [building multitenant web apps with CShells](https://www.elsaworkflows.io/blog/building-multitenant-web-apps-in-dotnet-with-cshells).
+
+The useful idea is the boundary.
+
+Features should bring behavior. Shells should decide where that behavior is active. The host should stay boring.
+
+## FAQ
+
+### Is CShells only for multi-tenant applications?
+
+No. Multi-tenancy is the obvious use case, but shells can also model environments, pricing tiers, brands, plugin surfaces, or backend-for-frontend routes. The common requirement is not "tenant"; it is "this runtime slice needs its own features and configuration."
+
+### Do features need `[ShellFeature]`?
+
+No. The attribute is optional. Use it when you need an explicit feature name, display name, dependencies, or metadata. If you do not need those, CShells can derive the feature name from the class.
+
+### Can shells change at runtime?
+
+Yes. CShells includes runtime shell management for adding, updating, removing, and reloading shells without restarting the application. The current runtime model records desired shell definitions and only commits a successor runtime when it is ready, so the last-known-good shell can remain routable during failed updates.

@@ -14,7 +14,7 @@ tags:
   - "software-architecture"
   - "ai"
 featuredImage: "../assets/2026-06-26-building-elsa-4-week-7/featured.png"
-featuredImageAlt: "Building Elsa 4 DevJournal cover — Week 7, “The Agent Enters the Building” — on a dark slate background with an abstract workflow-node graph motif."
+featuredImageAlt: "A protected workflow design canvas showing AI authoring behind a trust boundary."
 series: "Building Elsa 4"
 seoTitle: "Building Elsa 4 · Week 7: AI Authoring Behind a Trust Boundary"
 seoDescription: "How Elsa shipped the Weaver AI workflow assistant and a Git-first Extension Builder while keeping the safety envelope Elsa-owned, review-first, and reversible."

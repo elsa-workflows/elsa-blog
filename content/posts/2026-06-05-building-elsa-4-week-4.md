@@ -14,7 +14,7 @@ tags:
   - "software-architecture"
   - "workflow-engine"
 featuredImage: "../assets/2026-06-05-building-elsa-4-week-4/featured.png"
-featuredImageAlt: "Building Elsa 4 DevJournal cover — Week 4, “One Command, One Event Surface” — on a dark slate background with an abstract workflow-node graph motif."
+featuredImageAlt: "Workflow update inputs converging into one command and fanning into events."
 series: "Building Elsa 4"
 seoTitle: "Building Elsa 4 · Week 4: One Command, One Event Surface"
 seoDescription: "Week 4 collapses draft updates into one diff-based command while preserving typed lifecycle events, semver activity versions, and explicit extension seams."

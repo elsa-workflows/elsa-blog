@@ -14,7 +14,7 @@ tags:
   - "software-architecture"
   - "observability"
 featuredImage: "../assets/2026-06-19-building-elsa-4-week-6/featured.png"
-featuredImageAlt: "Building Elsa 4 DevJournal cover — Week 6, “Making the Engine Observable” — on a dark slate background with an abstract workflow-node graph motif."
+featuredImageAlt: "Telemetry streams and diagnostic panels showing an observable workflow engine."
 series: "Building Elsa 4"
 seoTitle: "Building Elsa 4 · Week 6: Making the Engine Observable"
 seoDescription: "Structured logs, OpenTelemetry, identity auth, a Studio repo split, and the first agent harness — week 6 makes the new Elsa 4 runtime observable and operable."

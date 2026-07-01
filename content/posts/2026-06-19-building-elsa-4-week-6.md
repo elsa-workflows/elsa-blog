@@ -49,6 +49,10 @@ This is the week the **workspace split** happens: the Studio prototype is extrac
 
 The split is an architectural boundary made physical. The engine and the "modular React studio shell hosted by ASP.NET Core" ([studio README](https://github.com/elsa-workflows/elsa-foundation-studio/blob/main/README.md)) now version independently, which is tracked as a Workspace Split Readiness goal ([program goal](https://github.com/elsa-workflows/elsa-foundation/blob/main/docs/program-goals/workspace-split-readiness.md)). Two repos, two release cadences, one protocol between them.
 
+![The first Elsa 4 Studio shell after the repo split — a minimal React shell with Overview and Diagnostics navigation and a merged console stream docked at the bottom](../assets/2026-06-19-building-elsa-4-week-6/studio-shell.png)
+
+*The newly split-out `elsa-foundation-studio` shell at its Week 6 state (`elsa-foundation-studio@e4777f5`): the modular React shell hosted by ASP.NET Core, with the merged Studio/Server console stream at the bottom. The navigation is deliberately sparse — Workflows and the Weaver assistant arrive in later weeks. Captured from a local build of the Week 6 commit.*
+
 ## Supporting thread: an agent harness appears
 
 The quietest commit may be the most consequential: a **Studio agent backend harness** is added ([PR #90](https://github.com/elsa-workflows/elsa-foundation/pull/90)), with follow-up commits hardening agent resource ownership and proposal execution. On its own it's infrastructure. In context, it's the foundation the **Weaver** AI authoring assistant is built on next week — and the reason week 7's story is entirely about the *trust boundary* around that harness. The capability lands here; the safety envelope comes next.

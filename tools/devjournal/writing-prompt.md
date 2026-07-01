@@ -121,6 +121,23 @@ Notes:
 - The kickoff post uses `--kicker "POST 0"`.
 - Requires the `@resvg/resvg-js` dev dependency (already in `package.json`).
 
+## STUDIO SCREENSHOTS (Studio-heavy weeks only)
+
+When the week ships a visible Studio change — a new panel, the workflow
+designer, Weaver, the Extension Builder, diagnostics — add one or two *inline*
+screenshots (not the cover). The rule matches the rest of the journal: **build
+the screenshot from the Studio/backend commit that was HEAD at the end of that
+week**, never from current `main`. Follow `tools/devjournal/studio-screenshots.md`
+for the build/run/capture recipe and `capture_studio.mjs` for interactive flows.
+
+- Place them as ``![alt](../assets/<window-end>-building-elsa-4-week-N/name.png)``
+  next to the paragraph they illustrate.
+- Caption each with an *italic line that names the source commit SHA*, e.g.
+  ``*Elsa Studio at `elsa-foundation-studio@aca0542`.*`` — the image is then as
+  verifiable as the prose.
+- Only claim what the shot shows. An empty-state panel with no backend is fine;
+  say so rather than implying data that isn't there.
+
 ## STYLE NOTES
 
 - Answer-first paragraphs: each section opens with the takeaway, then evidence.
@@ -135,6 +152,7 @@ Notes:
 - [ ] One clear headline theme (not a flat list of everything).
 - [ ] Every ADR/spec/PR reference verified against the repo.
 - [ ] Featured cover generated (`tools/devjournal/generate_cover.mjs`) and referenced via `featuredImage`.
+- [ ] Studio-heavy week: inline screenshot(s) built from the week's commit and captioned with the source SHA (`tools/devjournal/studio-screenshots.md`).
 - [ ] At least one "what it rules out / what we rejected" insight.
 - [ ] Calls back to ≥1 earlier post where relevant.
 - [ ] Ends with concrete "what's next" + best-of-week links.

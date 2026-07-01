@@ -14,7 +14,7 @@ tags:
   - "software-architecture"
   - "workflow-engine"
 featuredImage: "../assets/2026-05-15-building-elsa-4-week-1/featured.png"
-featuredImageAlt: "Building Elsa 4 DevJournal cover — Week 1, “Laying the Foundation Stone” — on a dark slate background with an abstract workflow-node graph motif."
+featuredImageAlt: "Glass architecture panels and workflow modules representing Elsa 4 governance."
 series: "Building Elsa 4"
 seoTitle: "Building Elsa 4 · Week 1: Laying the Foundation Stone"
 seoDescription: "The first week of Elsa 4: an empty repo, a two-layer constitution, and the Elsa.Common to Elsa.Primitives rename that sets the tone for everything after."

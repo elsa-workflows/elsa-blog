@@ -19,6 +19,7 @@ documents itself. This toolkit turns that paper trail into publishable posts.
 |---|---|
 | `devjournal_extract.py` | Read-only git extractor. Slices both repos by date window and emits a structured research brief: merged PRs, new/changed ADRs, new Speckit spec slices, constitution amendments, program-goal moves, and commits grouped by type. |
 | `writing-prompt.md` | The DevJournal writing prompt — voice, structure, and the non-negotiable "every claim links to a primary source" rules for a weekly post. |
+| `generate_cover.mjs` | Deterministic featured-cover generator. Renders a branded 1600×900 PNG (dark-slate Elsa designer style, workflow-node motif) from a kicker + title + meta, with no external services. Requires the `@resvg/resvg-js` dev dependency. |
 | `intro-post-outline.md` | A ready-to-write outline for the series anchor post, *"Why Elsa 4?"*, grounded in verified repo sources. |
 
 ## Prerequisites
@@ -58,7 +59,10 @@ mutates repo state.
    opening the cited ADRs/specs/PRs to quote them accurately.
 3. **Verify** — confirm every PR number, ADR, and spec reference against the
    repos before publishing. The brief is a pointer, not ground truth.
-4. **Publish** — add the post under `content/posts/YYYY-MM-DD-slug.md` following
+4. **Cover** — generate the branded featured image with
+   `generate_cover.mjs` (see `writing-prompt.md` → *Featured cover image*) and
+   reference it from the post's `featuredImage` frontmatter.
+5. **Publish** — add the post under `content/posts/YYYY-MM-DD-slug.md` following
    the repo's frontmatter conventions (see the root `CONTRIBUTING.md`), open a
    PR, and merge once validation passes.
 

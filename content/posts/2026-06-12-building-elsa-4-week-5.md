@@ -13,6 +13,8 @@ tags:
   - "devjournal"
   - "software-architecture"
   - "workflow-engine"
+featuredImage: "../assets/2026-06-12-building-elsa-4-week-5/featured.png"
+featuredImageAlt: "Building Elsa 4 DevJournal cover — Week 5, “The Runtime Stops Being a Stub” — on a dark slate background with an abstract workflow-node graph motif."
 series: "Building Elsa 4"
 seoTitle: "Building Elsa 4 · Week 5: The Runtime Stops Being a Stub"
 seoDescription: "67 merged PRs and 60+ runtime specs in one week: how Elsa 4 built its checkpoint-based execution seam and the Groundwork persistence foundation under it."

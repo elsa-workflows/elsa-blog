@@ -3,7 +3,7 @@ title: "Why Elsa 4? Rebuilding a .NET Workflow Engine from the Foundation Up"
 slug: "why-elsa-4-rebuilding-a-dotnet-workflow-engine"
 description: "Elsa 4 (codename Foundation) is a ground-up rebuild of the Elsa .NET workflow engine. Here's why elsa-core hit its limits, and the thin, modular, spec-driven foundation replacing it."
 publishedAt: "2026-05-08"
-status: "draft"
+status: "published"
 authors:
   - "sipke"
 category: "Engineering"

@@ -14,7 +14,7 @@ tags:
   - "software-architecture"
   - "workflow-engine"
 featuredImage: "../assets/2026-05-29-building-elsa-4-week-3/featured.png"
-featuredImageAlt: "Building Elsa 4 DevJournal cover — Week 3, “The First Specs, and a Rule Against God Objects” — on a dark slate background with an abstract workflow-node graph motif."
+featuredImageAlt: "Blank modular spec cards and scoped workflow blocks showing bounded state."
 series: "Building Elsa 4"
 seoTitle: "Building Elsa 4 · Week 3: The First Specs and a Rule Against God Objects"
 seoDescription: "Elsa 4's first Speckit slices arrive: an activity identity catalog as source of truth, and a constitution scope policy that prevents a workflow-state god object."

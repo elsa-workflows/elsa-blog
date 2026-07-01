@@ -13,6 +13,8 @@ tags:
   - "devjournal"
   - "software-architecture"
   - "workflow-engine"
+featuredImage: "../assets/2026-05-08-why-elsa-4-rebuilding-a-dotnet-workflow-engine/featured.png"
+featuredImageAlt: "Building Elsa 4 DevJournal cover — Post 0, “Why Elsa 4?” — on a dark slate background with an abstract workflow-node graph motif."
 series: "Building Elsa 4"
 seoTitle: "Why Elsa 4? Rebuilding a .NET Workflow Engine"
 seoDescription: "Why elsa-core's architecture hit its limits and the thin, modular, spec-driven foundation replacing it. The kickoff post of the Building Elsa 4 series."

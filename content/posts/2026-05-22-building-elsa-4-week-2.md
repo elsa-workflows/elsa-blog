@@ -14,7 +14,7 @@ tags:
   - "software-architecture"
   - "workflow-engine"
 featuredImage: "../assets/2026-05-22-building-elsa-4-week-2/featured.png"
-featuredImageAlt: "Building Elsa 4 DevJournal cover — Week 2, “How Domains Talk Without Touching” — on a dark slate background with an abstract workflow-node graph motif."
+featuredImageAlt: "Separated workflow domains exchanging event packets through a mediator hub."
 series: "Building Elsa 4"
 seoTitle: "Building Elsa 4 · Week 2: How Domains Talk Without Touching"
 seoDescription: "Cross-domain communication via Mediator domain events and the Jint engine behind an adapter — week 2 is about wiring domains together without coupling them."

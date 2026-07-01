@@ -19,7 +19,7 @@ documents itself. This toolkit turns that paper trail into publishable posts.
 |---|---|
 | `devjournal_extract.py` | Read-only git extractor. Slices both repos by date window and emits a structured research brief: merged PRs, new/changed ADRs, new Speckit spec slices, constitution amendments, program-goal moves, and commits grouped by type. |
 | `writing-prompt.md` | The DevJournal writing prompt — voice, structure, and the non-negotiable "every claim links to a primary source" rules for a weekly post. |
-| `generate_cover.mjs` | Deterministic featured-cover generator. Renders a branded 1600×900 PNG from a kicker + title + meta, with series-specific accents and motifs such as runtime checkpoints, observability, trust boundaries, and domain events. Requires the `@resvg/resvg-js` dev dependency. |
+| `generate_cover.mjs` | Deterministic featured-cover generator. Renders a branded 1600×900 PNG (dark-slate Elsa designer style, workflow-node motif) from a kicker + title + meta, with no external services. Requires the `@resvg/resvg-js` dev dependency. |
 | `intro-post-outline.md` | A ready-to-write outline for the series anchor post, *"Why Elsa 4?"*, grounded in verified repo sources. |
 
 ## Prerequisites
@@ -65,22 +65,6 @@ mutates repo state.
 5. **Publish** — add the post under `content/posts/YYYY-MM-DD-slug.md` following
    the repo's frontmatter conventions (see the root `CONTRIBUTING.md`), open a
    PR, and merge once validation passes.
-
-## Cover examples
-
-```bash
-node tools/devjournal/generate_cover.mjs \
-    --kicker "WEEK 5" \
-    --title "The Runtime Stops Being a Stub" \
-    --meta "June 5-12, 2026 · elsa-foundation" \
-    --accent teal \
-    --motif runtime \
-    --out content/assets/2026-06-12-building-elsa-4-week-5/featured.png
-```
-
-Available accents are `teal`, `blue`, `violet`, `amber`, `green`, and `rose`.
-Available motifs are `foundation`, `constitution`, `events`, `specs`,
-`command`, `runtime`, `observability`, and `trust`.
 
 ## Notes
 

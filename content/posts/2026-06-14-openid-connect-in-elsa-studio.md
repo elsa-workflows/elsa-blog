@@ -3,7 +3,7 @@ title: "OpenID Connect in Elsa Studio 3.7"
 slug: "openid-connect-in-elsa-studio"
 description: "Elsa Studio 3.7 added a cleaner OpenID Connect authentication model, with separate Blazor Server and WebAssembly packages instead of one login implementation trying to cover every host."
 publishedAt: "2026-06-14"
-updatedAt: "2026-07-01"
+updatedAt: "2026-07-05"
 status: "published"
 authors:
   - "sipke"
@@ -43,6 +43,7 @@ It is not the newest thing in the repository anymore, but it is worth calling ou
 > - Elsa Studio now has separate OIDC packages for Blazor Server and Blazor WebAssembly hosts.
 > - Server-hosted Studio can use cookies, protected authentication tickets, and optional confidential-client settings.
 > - WebAssembly Studio remains a public browser client, so it uses framework-managed token acquisition and no client secret.
+> - Hosted WebAssembly OIDC has one easy-to-miss startup dependency: load Microsoft's `AuthenticationService.js` before Blazor starts.
 
 If you are also tightening the host around Studio, this OIDC work sits next to the broader shell and security work covered in [configuring Elsa with shell features](/blog/configuring-elsa-with-shell-features), [secret references in Elsa 3.8](/blog/secret-references-in-elsa-3-8), and the deliberately split [Elsa Studio dashboard](/blog/the-elsa-studio-dashboard-is-split-on-purpose).
 
@@ -136,7 +137,7 @@ There is no client secret here. A browser app cannot keep one.
 
 The WebAssembly package uses `Microsoft.AspNetCore.Components.WebAssembly.Authentication`. It provides the `/authentication/{action}` routes used by `RemoteAuthenticatorView`, registers a token provider backed by `IAccessTokenProvider`, and configures the unauthorized route behavior so users are sent into the OIDC login flow.
 
-One small setup detail is easy to miss if you build a custom WASM host: the Microsoft authentication JavaScript file must be loaded before Blazor starts.
+One small setup detail is easy to miss in WebAssembly hosts: the Microsoft authentication JavaScript file must be loaded before Blazor starts.
 
 ```html
 <script src="_content/Microsoft.AspNetCore.Components.WebAssembly.Authentication/AuthenticationService.js"></script>
@@ -145,7 +146,9 @@ One small setup detail is easy to miss if you build a custom WASM host: the Micr
 
 If that script is missing, startup fails with the familiar `AuthenticationService.init` undefined error. That is not an Elsa workflow problem. It is the Blazor WebAssembly authentication stack not being initialized.
 
-The default Elsa Studio shell already accounts for this. The caveat mostly matters when you compose your own host.
+The standalone Elsa Studio WASM host already includes that script in `wwwroot/index.html`. The hosted WASM entry page is a separate host surface, though, and a community report showed it can hit the same startup failure when OIDC is enabled. That is tracked in [`elsa-studio` issue #914](https://github.com/elsa-workflows/elsa-studio/issues/914), with [`elsa-studio` PR #915](https://github.com/elsa-workflows/elsa-studio/pull/915) adding the same script include to `Pages/_Host.cshtml` before `_framework/blazor.webassembly.js`.
+
+So the practical troubleshooting rule is simple: if WebAssembly OIDC fails before the app finishes booting, check the host page before debugging token settings. A wrong authority or scope usually fails during the OIDC round trip. A missing `AuthenticationService.js` fails earlier, while Blazor is trying to initialize the browser-side authentication service.
 
 ## Why separate authentication scopes from API scopes?
 
@@ -171,7 +174,9 @@ It also matches how Studio is used in production. Studio is not the identity pro
 
 OpenID Connect support does not remove the need to configure your identity provider correctly. The protocol gives Studio an identity and token acquisition path; it does not design your tenant model, role mappings, reverse-proxy behavior, or resource-level authorization rules.
 
-You still need matching redirect URIs. For WebAssembly, that usually means `/authentication/login-callback`. For Blazor Server, the default is `/signin-oidc`. If you deploy Studio under a reverse proxy path, you need to be careful with externally visible URLs and callback paths. There is already follow-up work around sub-path deployments in [`elsa-studio` PR #809](https://github.com/elsa-workflows/elsa-studio/pull/809), which is a good reminder that authentication bugs often appear at the hosting boundary rather than inside the workflow engine.
+You still need matching redirect URIs. For WebAssembly, that usually means `/authentication/login-callback`. For Blazor Server, the default is `/signin-oidc`. If you deploy Studio under a reverse proxy path such as `/workflow`, the identity provider may need `https://myapp.com/workflow/signin-oidc` rather than `https://myapp.com/signin-oidc`.
+
+That is exactly the shape addressed by the open [`elsa-studio` PR #809](https://github.com/elsa-workflows/elsa-studio/pull/809), which proposes a `RedirectUriPrefix` option for the older `Elsa.Studio.Login` OIDC flow. The broader lesson applies regardless of the final API shape: callback paths have to be built from the public URL the identity provider sees, not just from the internal app path. Authentication bugs often appear at the hosting boundary rather than inside the workflow engine.
 
 You also still need to decide what authorization means for your application.
 

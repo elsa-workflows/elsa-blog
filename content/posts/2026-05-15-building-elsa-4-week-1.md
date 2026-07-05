@@ -3,7 +3,7 @@ title: "Building Elsa 4 · Week 1: Laying the Foundation Stone"
 slug: "building-elsa-4-week-1"
 description: "Week 1 of Elsa 4: the repository is born, a two-layer constitution lands as the project's law, and Elsa.Common is renamed to Elsa.Primitives to kill the oldest leak."
 publishedAt: "2026-05-15"
-status: "draft"
+status: "published"
 authors:
   - "sipke"
 category: "Engineering"

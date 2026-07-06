@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">Inline and deferred event lanes in Elsa 4</title>
+  <desc id="desc">Two event delivery lanes showing inline handlers completing before read-back and deferred handlers running later.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#101820"/>
+      <stop offset="0.55" stop-color="#17313d"/>
+      <stop offset="1" stop-color="#2d3f2f"/>
+    </linearGradient>
+    <linearGradient id="inline" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#7dd3fc"/>
+      <stop offset="1" stop-color="#38bdf8"/>
+    </linearGradient>
+    <linearGradient id="deferred" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#facc15"/>
+      <stop offset="1" stop-color="#fb923c"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <circle cx="1040" cy="110" r="150" fill="#ffffff" opacity="0.05"/>
+  <circle cx="120" cy="560" r="210" fill="#ffffff" opacity="0.04"/>
+  <g font-family="Inter, Segoe UI, Arial, sans-serif" fill="#f8fafc">
+    <text x="84" y="108" font-size="54" font-weight="700">Inline vs Deferred Events</text>
+    <text x="86" y="154" font-size="26" fill="#cbd5e1">Elsa 4 makes event delivery timing explicit</text>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="86" y="230" width="1028" height="128" rx="18" fill="#0f172a" opacity="0.88"/>
+    <rect x="86" y="418" width="1028" height="128" rx="18" fill="#0f172a" opacity="0.88"/>
+  </g>
+  <g font-family="Inter, Segoe UI, Arial, sans-serif">
+    <text x="126" y="274" fill="#e0f2fe" font-size="30" font-weight="700">Inline</text>
+    <text x="126" y="316" fill="#bae6fd" font-size="21">handlers awaited, effects visible on return</text>
+    <text x="126" y="462" fill="#fef3c7" font-size="30" font-weight="700">Deferred</text>
+    <text x="126" y="504" fill="#fde68a" font-size="21">event queued, publisher returns before handlers run</text>
+  </g>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="12">
+    <path d="M430 292h132" stroke="url(#inline)"/>
+    <path d="M552 292l-26-22m26 22l-26 22" stroke="#38bdf8"/>
+    <path d="M650 292h132" stroke="url(#inline)"/>
+    <path d="M772 292l-26-22m26 22l-26 22" stroke="#38bdf8"/>
+    <path d="M868 292h110" stroke="url(#inline)"/>
+    <path d="M968 292l-26-22m26 22l-26 22" stroke="#38bdf8"/>
+    <path d="M430 480h132" stroke="url(#deferred)"/>
+    <path d="M552 480l-26-22m26 22l-26 22" stroke="#fb923c"/>
+    <path d="M650 480h132" stroke="url(#deferred)" stroke-dasharray="18 18"/>
+    <path d="M772 480l-26-22m26 22l-26 22" stroke="#fb923c"/>
+    <path d="M868 480h110" stroke="url(#deferred)" stroke-dasharray="18 18"/>
+    <path d="M968 480l-26-22m26 22l-26 22" stroke="#fb923c"/>
+  </g>
+  <g font-family="Inter, Segoe UI, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle">
+    <g fill="#0f172a">
+      <rect x="388" y="254" width="86" height="76" rx="12" fill="#e0f2fe"/>
+      <rect x="586" y="254" width="106" height="76" rx="12" fill="#bae6fd"/>
+      <rect x="802" y="254" width="94" height="76" rx="12" fill="#7dd3fc"/>
+      <rect x="984" y="254" width="90" height="76" rx="12" fill="#38bdf8"/>
+      <text x="431" y="300">event</text>
+      <text x="639" y="300">handler</text>
+      <text x="849" y="300">effect</text>
+      <text x="1029" y="300">read</text>
+    </g>
+    <g fill="#0f172a">
+      <rect x="388" y="442" width="86" height="76" rx="12" fill="#fef3c7"/>
+      <rect x="586" y="442" width="106" height="76" rx="12" fill="#fde68a"/>
+      <rect x="802" y="442" width="94" height="76" rx="12" fill="#facc15"/>
+      <rect x="984" y="442" width="90" height="76" rx="12" fill="#fb923c"/>
+      <text x="431" y="488">event</text>
+      <text x="639" y="488">queue</text>
+      <text x="849" y="488">worker</text>
+      <text x="1029" y="488">later</text>
+    </g>
+  </g>
+</svg>

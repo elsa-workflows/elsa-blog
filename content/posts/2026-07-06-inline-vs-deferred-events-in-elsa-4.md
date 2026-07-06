@@ -13,8 +13,8 @@ tags:
   - "software-architecture"
   - "workflow-engine"
   - "events"
-featuredImage: "../assets/2026-07-06-inline-vs-deferred-events-in-elsa-4/featured.svg"
-featuredImageAlt: "Two Elsa event lanes showing inline handlers completing before read-back and deferred handlers running later."
+featuredImage: "../assets/2026-07-06-inline-vs-deferred-events-in-elsa-4/featured.png"
+featuredImageAlt: "Generated 3D illustration of Elsa event publishing split into inline and deferred delivery lanes."
 seoTitle: "Inline vs Deferred Events in Elsa 4"
 seoDescription: "Elsa 4 separates inline and deferred event publishing so validation gates can await handler effects while notifications remain fire-and-forget."
 redirectFrom: []

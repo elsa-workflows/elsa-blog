@@ -3,7 +3,7 @@ title: "Building Elsa 4 · Week 2: How Domains Talk Without Touching"
 slug: "building-elsa-4-week-2"
 description: "Week 2 of Elsa 4: cross-domain hooks move to Mediator domain events, and the Jint scripting engine is accepted only behind an adapter — coupling stays visible."
 publishedAt: "2026-05-22"
-status: "draft"
+status: "published"
 authors:
   - "sipke"
 category: "Engineering"

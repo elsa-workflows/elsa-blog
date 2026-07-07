@@ -13,7 +13,7 @@ tags:
   - "devjournal"
   - "software-architecture"
 featuredImage: "../assets/2026-05-29-building-elsa-4-week-3/featured.png"
-featuredImageAlt: "Numbered specification cards arranged in a modular grid representing Elsa 4 Speckit slices."
+featuredImageAlt: "Translucent numbered specification cards in a modular grid over a dark technical surface."
 series: "Building Elsa 4"
 seoTitle: "Building Elsa 4 Week 3: The First Speckit Slices"
 seoDescription: "Week 3 turns Elsa 4 architecture into Speckit slices: WorkflowDefinitionState scope, activity catalog identity, and numbered specs."

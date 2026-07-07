@@ -14,7 +14,7 @@ tags:
   - "software-architecture"
   - "workflow-engine"
 featuredImage: "../assets/2026-06-12-building-elsa-4-week-5/featured.png"
-featuredImageAlt: "Spec cards cascading outward from a fracture line representing the Elsa 4 runtime execution seam exploding into specs."
+featuredImageAlt: "Glowing spec tiles cascade from a fracture line through a dark architectural blueprint."
 series: "Building Elsa 4"
 seoTitle: "Building Elsa 4 Week 5: Runtime Execution Seam Specs"
 seoDescription: "Week 5 turns Elsa 4's runtime contract into 67 merged PRs of ordered specs, with Groundwork defining the persistence substrate."

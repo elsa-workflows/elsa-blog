@@ -14,6 +14,8 @@ tags:
   - "software-architecture"
   - "workflow-engine"
   - "runtime-execution-seam"
+featuredImage: "../assets/2026-07-03-building-elsa-4-week-8/featured.png"
+featuredImageAlt: "A luminous runtime execution pipeline connects modular workflow components on a dark blueprint."
 series: "Building Elsa 4"
 seoTitle: "Building Elsa 4 Week 8: Runtime Execution Seam Becomes Real"
 seoDescription: "Week 8 makes the Elsa 4 runtime pipeline the real execution spine (ADR 0029) and retires the DI-injected execution context (ADR 0030)."

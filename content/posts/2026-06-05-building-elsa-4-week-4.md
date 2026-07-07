@@ -13,6 +13,8 @@ tags:
   - "devjournal"
   - "software-architecture"
   - "workflow-engine"
+featuredImage: "../assets/2026-06-05-building-elsa-4-week-4/featured.png"
+featuredImageAlt: "Fragmented technical tiles converge into three luminous panels for command, event, and version."
 series: "Building Elsa 4"
 seoTitle: "Building Elsa 4 Week 4: One Command, One Event, One Version"
 seoDescription: "Week 4 collapses Elsa 4's design domain: 20 draft-mutation commands become one diff-based IUpdate, three pub/sub concepts merge into IEvent, and activity versioning moves to author-controlled semver."

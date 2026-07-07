@@ -3,7 +3,7 @@ title: "Building Elsa 4 · Week 5: The Runtime Execution Seam Explodes into Spec
 slug: "building-elsa-4-week-5"
 description: "Week 5 turns Elsa 4's runtime contract into 67 merged PRs of ordered specs, with Groundwork defining the persistence substrate."
 publishedAt: "2026-06-12"
-status: "draft"
+status: "published"
 authors:
   - "sipke"
 category: "Engineering"

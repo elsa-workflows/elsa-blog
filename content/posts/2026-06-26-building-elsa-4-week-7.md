@@ -3,7 +3,7 @@ title: "Building Elsa 4 · Week 7: The Agent Enters the Building, Behind a Trust
 slug: "building-elsa-4-week-7"
 description: "Week 7: Weaver lands as an agentic workflow-authoring MVP and Extension Builder becomes a Git-first .NET editor, both behind an Elsa-owned trust boundary."
 publishedAt: "2026-06-26"
-status: "draft"
+status: "published"
 authors:
   - "sipke"
 category: "Engineering"

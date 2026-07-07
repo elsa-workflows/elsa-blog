@@ -3,7 +3,7 @@ title: "Building Elsa 4 · Week 6: Making the Engine Observable"
 slug: "building-elsa-4-week-6"
 description: "Week 6 of Elsa 4: structured logs and OpenTelemetry diagnostics land behind contracts, identity auth arrives, Studio is split into its own repo, and an agent harness appears."
 publishedAt: "2026-06-19"
-status: "draft"
+status: "published"
 authors:
   - "sipke"
 category: "Engineering"

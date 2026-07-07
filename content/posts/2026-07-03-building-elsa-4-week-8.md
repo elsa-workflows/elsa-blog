@@ -3,7 +3,7 @@ title: "Building Elsa 4 · Week 8: The Runtime Execution Seam Becomes Real"
 slug: "building-elsa-4-week-8"
 description: "Week 8 makes the Elsa 4 runtime pipeline the real execution spine (ADR 0029) and retires the DI-injected execution context for a parameter-threaded live carrier (ADR 0030)."
 publishedAt: "2026-07-03"
-status: "draft"
+status: "published"
 authors:
   - "sipke"
 category: "Engineering"

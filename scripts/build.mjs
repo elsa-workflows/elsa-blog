@@ -123,11 +123,12 @@ async function toDetailPost(post, authors) {
 }
 
 function normalizePostHtml(html, post) {
+  let normalized = removeLeadingHeading(html.trim(), "h1", post.title);
+
   if (post.sourceName !== "Medium") {
-    return html;
+    return normalized;
   }
 
-  let normalized = html.trim();
   normalized = removeLeadingHeading(normalized, "h3", post.title);
   normalized = removeLeadingHeading(normalized, "h4", post.description);
 

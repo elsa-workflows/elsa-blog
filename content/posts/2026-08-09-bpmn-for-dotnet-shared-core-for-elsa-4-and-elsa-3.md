@@ -29,14 +29,14 @@ Elsa 4 has a BPMN implementation. Elsa 3 doesn't—not yet. That created a sligh
 
 None of those is a good long-term answer.
 
-The better boundary turned out to be one we had already discovered while building BPMN support in Elsa 4: the code that knows what BPMN means is mostly independent from the code that knows how Elsa runs work. That observation led to [BPMN for .NET](https://github.com/valence-works/bpmn), a new MIT-licensed library for BPMN 2.0 interchange and semantics. Elsa 4 already consumes the extracted interchange packages and is the first host for the proposed semantics extraction. Elsa 3 is the intended, deferred second consumer—not a released integration.
+The better boundary turned out to be one we had already discovered while building BPMN support in Elsa 4: the code that knows what BPMN means is mostly independent from the code that knows how Elsa runs work. That observation led to [BPMN for .NET](https://bpmnfor.net/), a new MIT-licensed library for BPMN 2.0 interchange and semantics. Elsa 4 already consumes the extracted interchange packages and is the first host for the proposed semantics extraction. Elsa 3 is the intended, deferred second consumer—not a released integration.
 
 > **Key Takeaways**
 > - BPMN for .NET owns BPMN 2.0 XML, the object model, and process semantics—not persistence, scheduling, retries, or I/O.
 > - The project's survey covered 88 C# repositories and 50 NuGet packages, but found no maintained, license-clean library with this exact boundary.
 > - Elsa 4 already consumes the shared interchange packages. Elsa 3 support is intended next, but is not released today.
 
-The repository is at [github.com/valence-works/bpmn](https://github.com/valence-works/bpmn), and the project site is [bpmncore.com](https://bpmncore.com/).
+The project site is [bpmnfor.net](https://bpmnfor.net/), and the source is available at [github.com/valence-works/bpmn](https://github.com/valence-works/bpmn).
 
 ## The awkward gap in .NET BPMN tooling
 
@@ -170,7 +170,7 @@ Elsa 4 gave the implementation somewhere real to grow up. Extracting the model a
 
 That is the balance we wanted: one implementation of what BPMN means, and room for each host to decide how work actually gets done.
 
-Explore [BPMN for .NET on GitHub](https://github.com/valence-works/bpmn), read the documentation at [bpmncore.com](https://bpmncore.com/), or follow the [Elsa 4 integration decision](https://github.com/elsa-workflows/elsa-foundation/blob/main/docs/adr/0063-bpmn-moves-to-a-host-agnostic-library.md).
+Explore [BPMN for .NET at bpmnfor.net](https://bpmnfor.net/), browse the [source on GitHub](https://github.com/valence-works/bpmn), or follow the [Elsa 4 integration decision](https://github.com/elsa-workflows/elsa-foundation/blob/main/docs/adr/0063-bpmn-moves-to-a-host-agnostic-library.md).
 
 ## Primary sources
 

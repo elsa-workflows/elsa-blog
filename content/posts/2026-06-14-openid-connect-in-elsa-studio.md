@@ -3,7 +3,7 @@ title: "OpenID Connect in Elsa Studio 3.7"
 slug: "openid-connect-in-elsa-studio"
 description: "Elsa Studio 3.7 added a cleaner OpenID Connect authentication model, with separate Blazor Server and WebAssembly packages instead of one login implementation trying to cover every host."
 publishedAt: "2026-06-14"
-updatedAt: "2026-07-05"
+updatedAt: "2026-08-10"
 status: "published"
 authors:
   - "sipke"
@@ -181,6 +181,8 @@ That is exactly the shape addressed by the open [`elsa-studio` PR #809](https://
 You also still need to decide what authorization means for your application.
 
 OIDC answers who the user is and how Studio gets a token. It does not automatically design your permission model, tenant model, role mappings, or resource-level access rules. Elsa has its own identity and authorization pieces, and there has been recent hardening work around API keys, token purposes, SignalR authorization, and secure defaults. OIDC fits into that wider security story; it is not the whole story by itself.
+
+For the built-in side of that boundary, [managing Elsa users and roles in Studio 3.8](/blog/managing-elsa-users-and-roles-in-studio-3-8) explains the permission-aware administration screens and the server checks behind them.
 
 That distinction is worth keeping clear.
 

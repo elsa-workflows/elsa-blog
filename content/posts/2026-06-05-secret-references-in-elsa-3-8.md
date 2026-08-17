@@ -114,6 +114,8 @@ return `Bearer ${token}`;
 
 The integration tests show that `getSecret('api:key')` returns a promise-compatible value and records that `api:key` was resolved. Other tests cover `.then(...)` composition and async IIFEs.
 
+The later [JavaScript evaluator work for Elsa 3.8](/blog/safer-faster-javascript-expressions-elsa-3-8) awaits those promise-compatible values without holding a thread pool thread and adds configurable execution limits around the expression.
+
 Use this when a script genuinely needs to combine a secret with runtime data. Do not resolve a secret just to write it into a variable, activity output, log message, or incident note. Once the value leaves the resolver, it is just a string again.
 
 ## What still depends on activity authors?

@@ -1,8 +1,9 @@
 ---
-title: "Safer, Faster JavaScript Expressions in Elsa 3.8"
-slug: "safer-faster-javascript-expressions-elsa-3-8"
-description: "Elsa 3.8 adds a 30-second JavaScript timeout, non-blocking promises, leaner evaluator setup, and an enum-constant upgrade note for existing workflows."
+title: "Safer, Faster JavaScript Expressions in Elsa 3.9"
+slug: "safer-faster-javascript-expressions-elsa-3-9"
+description: "Elsa 3.9 adds a 30-second JavaScript timeout, non-blocking promises, leaner evaluator setup, and an enum-constant upgrade note for workflows."
 publishedAt: "2026-08-17"
+updatedAt: "2026-08-18"
 status: "published"
 authors:
   - "sipke"
@@ -13,38 +14,40 @@ tags:
   - "javascript"
   - "expressions"
   - "security"
-featuredImage: "../assets/2026-08-17-safer-faster-javascript-expressions-elsa-3-8/featured.png"
+featuredImage: "../assets/2026-08-17-safer-faster-javascript-expressions-elsa-3-9/featured.png"
 featuredImageAlt: "A soft blue JavaScript runtime engine surrounded by timeout, memory, statement, and recursion controls."
-seoTitle: "Safer, Faster JavaScript Expressions in Elsa 3.8"
-seoDescription: "Elsa 3.8 adds a 30-second JavaScript timeout, non-blocking promises, leaner evaluator setup, and an enum-constant upgrade note for existing workflows."
-redirectFrom: []
+seoTitle: "Safer, Faster JavaScript Expressions in Elsa 3.9"
+seoDescription: "Elsa 3.9 adds a 30-second JavaScript timeout, non-blocking promises, leaner evaluator setup, and an enum-constant upgrade note for workflows."
+redirectFrom:
+  - "/blog/safer-faster-javascript-expressions-elsa-3-8"
 related:
   - "secret-references-in-elsa-3-8"
-  - "elsa-3-8-preview-1"
   - "suspended-workflows-and-elsa-upgrades"
   - "building-elsa-4-week-2"
 ---
 
-# Safer, Faster JavaScript Expressions in Elsa 3.8
+# Safer, Faster JavaScript Expressions in Elsa 3.9
+
+> **Correction, August 18, 2026:** An earlier version identified this work as part of Elsa 3.8. The changes are on `main`, are absent from `release/3.8.0`, and belong to Elsa 3.9.
 
 JavaScript expressions are convenient because they sit close to the workflow. A condition can read a variable, an input can await a secret, and a small transformation can stay beside the activity that uses it.
 
 **Jint** is the .NET JavaScript interpreter behind Elsa 3 expressions. Until now, Elsa imposed no default execution bound on it. A script such as `while (true) {}` could occupy its calling thread indefinitely. Promise-returning expressions blocked a thread while Jint drained its event loop. Every evaluation also paid to install globals the expression might never read.
 
-Five merged pull requests change that for the Elsa 3.8 line: [#7891](https://github.com/elsa-workflows/elsa-core/pull/7891), [#7892](https://github.com/elsa-workflows/elsa-core/pull/7892), [#7893](https://github.com/elsa-workflows/elsa-core/pull/7893), [#7894](https://github.com/elsa-workflows/elsa-core/pull/7894), and [#7895](https://github.com/elsa-workflows/elsa-core/pull/7895).
+Five merged pull requests change that for the Elsa 3.9 line: [#7891](https://github.com/elsa-workflows/elsa-core/pull/7891), [#7892](https://github.com/elsa-workflows/elsa-core/pull/7892), [#7893](https://github.com/elsa-workflows/elsa-core/pull/7893), [#7894](https://github.com/elsa-workflows/elsa-core/pull/7894), and [#7895](https://github.com/elsa-workflows/elsa-core/pull/7895).
 
 > **Key Takeaways**
 > - JavaScript evaluation now has a 30-second default timeout, plus configurable statement, memory, and recursion limits.
 > - Promise-returning expressions are awaited without holding a thread pool thread, and workflow cancellation reaches Jint's execution loop.
 > - Elsa builds less evaluator state for ordinary expressions, but enum constants now surface as names instead of numbers.
 
-> **Availability:** These changes merged into `main` on August 16, 2026, after `3.8.0-preview1`. They are not in the latest stable release, 3.7.1, or in Preview 1. Build from a source revision containing Core PRs #7891-#7895, or wait for a later Elsa 3.8 package. Keep Core modules on aligned versions when you test the change. [Elsa 3.8 Preview 1](/blog/elsa-3-8-preview-1) provides the wider release context.
+> **Availability:** These changes merged into `main` on August 16, 2026. They are absent from the [`release/3.8.0` branch](https://github.com/elsa-workflows/elsa-core/tree/release/3.8.0) and from [Elsa 3.8.0 RC1](https://github.com/elsa-workflows/elsa-core/releases/tag/3.8.0-rc1), so they are Elsa 3.9 work rather than Elsa 3.8 work. No 3.9 package includes them yet. Build from a source revision containing Core PRs #7891-#7895, or wait for a 3.9 preview or release. Keep Core modules on aligned versions when you test the change.
 
 ## What now stops a runaway expression?
 
 Elsa now configures Jint with one default wall-clock limit and three optional resource limits. The ambient cancellation token is registered as an engine constraint too, so cancellation can interrupt synchronous JavaScript execution rather than only the asynchronous work around it.
 
-| Limit | Elsa 3.8 default | What it bounds |
+| Limit | Elsa 3.9 default | What it bounds |
 | --- | --- | --- |
 | `ExecutionTimeout` | 30 seconds | Wall-clock time for one expression |
 | `MaxStatements` | No limit | Executed JavaScript statements |
@@ -116,7 +119,7 @@ Read those figures with the PR's caveat. They measure the combined Jint upgrade 
 
 The Jint integration now exposes .NET enum values and registered enum constants consistently as member names. Before the change, a variable holding `LogPersistenceMode.Include` reached JavaScript as `"Include"`, while reading `LogPersistenceMode.Include` directly produced its underlying number. Comparing them with `===` was therefore false.
 
-In Elsa 3.8, both sides are strings. This fixes the inconsistent comparison, but it changes raw numeric uses of registered enum constants:
+In Elsa 3.9, both sides are strings. This fixes the inconsistent comparison, but it changes raw numeric uses of registered enum constants:
 
 ```javascript
 // Portable before and after the change.
@@ -128,7 +131,7 @@ LogPersistenceMode.Include + 1
 
 Typed conversions still accept the member name or number when a value moves back into a .NET enum property, activity input, or typed variable. The upgrade risk sits in JavaScript that treats a constant as a number, and in persisted data created by that pattern.
 
-Suppose an in-flight workflow stored the old numeric value in an untyped variable. After the upgrade, comparing that stored number with `LogPersistenceMode.Include` compares a number with a string. The [3.8 changelog](https://github.com/elsa-workflows/elsa-core/blob/7328a0f14d4f6e21cb422f649c5d9eb0471d159a/doc/changelogs/3.8.0.md) calls this out because it can affect resumed instances, not only new ones.
+Suppose an in-flight workflow stored the old numeric value in an untyped variable. After the upgrade, comparing that stored number with `LogPersistenceMode.Include` compares a number with a string. [Core PR #7895](https://github.com/elsa-workflows/elsa-core/pull/7895) calls this out because it can affect resumed instances, not only new ones.
 
 Before upgrading, search definitions and code for registered enum constants used in arithmetic, numeric comparisons, or persisted untyped variables. Prefer comparison with the member name when the expression's intent is symbolic. For broader upgrade planning around durable state, see [Suspended Workflows and Elsa Upgrades](/blog/suspended-workflows-and-elsa-upgrades).
 
@@ -170,7 +173,7 @@ The Jint upgrade is useful because it improves three different boundaries at onc
 
 The one change that deserves migration work is also the easiest to state: registered enum constants are names now. Audit numeric uses and persisted untyped values before moving running systems onto a build that contains these PRs.
 
-Once a later Elsa 3.8 package includes the merged work, start with a staging host, keep the default timeout, add limits that match your trust model, and resume a representative set of suspended workflows. That gives the new evaluator path evidence in your own environment before it carries production work.
+Once an Elsa 3.9 package includes the merged work, start with a staging host, keep the default timeout, add limits that match your trust model, and resume a representative set of suspended workflows. That gives the new evaluator path evidence in your own environment before it carries production work.
 
 ## Primary sources
 
@@ -180,5 +183,5 @@ Once a later Elsa 3.8 package includes the merged work, start with a staging hos
 - [Core PR #7894: Update Jint to 4.15.3 and stop blocking on promises](https://github.com/elsa-workflows/elsa-core/pull/7894), Elsa Workflows, merged 2026-08-16 and retrieved 2026-08-17.
 - [Core PR #7895: Adopt the Jint 4.15 host-integration surface](https://github.com/elsa-workflows/elsa-core/pull/7895), Elsa Workflows, merged 2026-08-16 and retrieved 2026-08-17.
 - [`JintOptions` execution constraints](https://github.com/elsa-workflows/elsa-core/blob/7328a0f14d4f6e21cb422f649c5d9eb0471d159a/src/modules/Elsa.Expressions.JavaScript/Options/JintOptions.cs), Elsa Core, retrieved 2026-08-17.
-- [Elsa 3.8 JavaScript upgrade notes](https://github.com/elsa-workflows/elsa-core/blob/7328a0f14d4f6e21cb422f649c5d9eb0471d159a/doc/changelogs/3.8.0.md), Elsa Core, retrieved 2026-08-17.
-- [Elsa Core 3.7.1 release](https://github.com/elsa-workflows/elsa-core/releases/tag/3.7.1), latest stable release when retrieved on 2026-08-17.
+- [`release/3.8.0` branch](https://github.com/elsa-workflows/elsa-core/tree/release/3.8.0), Elsa Core, retrieved 2026-08-18.
+- [Elsa Core 3.8.0 RC1](https://github.com/elsa-workflows/elsa-core/releases/tag/3.8.0-rc1), published 2026-08-17 without the five JavaScript evaluator changes.

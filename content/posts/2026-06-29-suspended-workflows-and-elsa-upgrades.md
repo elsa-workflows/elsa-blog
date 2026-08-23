@@ -3,7 +3,7 @@ title: "Suspended Workflows Are Runtime State, Not Just Definitions"
 slug: "suspended-workflows-and-elsa-upgrades"
 description: "A practical look at what happens when Elsa workflows are suspended during an upgrade, and why persisted state and bookmarks need their own migration plan."
 publishedAt: "2026-06-29"
-updatedAt: "2026-07-01"
+updatedAt: "2026-08-23"
 status: "published"
 authors:
   - "sipke"
@@ -72,6 +72,8 @@ That is useful. It means some renamed or moved types can still be read.
 But that is different from saying Elsa has a general-purpose suspended-instance migration engine.
 
 The resolver can help the serializer find a type. It cannot know whether an old bookmark payload still hashes the same way, whether an activity's internal state model changed semantically, or whether a flow-control object from an older version can be safely interpreted as the newer one.
+
+For a focused example of that contract, see [why custom Elsa payloads can return as camel-cased property bags after persistence](/blog/why-elsa-payloads-change-shape-after-persistence), and how a registered serialization alias preserves their CLR type.
 
 The discussion surfaced a good example: event bookmark casing. In Elsa 3.2, `EventBookmarkPayload.EventName` normalized values to lowercase. In the current runtime, the old payload type is forwarded, and event stimuli are handled differently. If stored bookmarks were created with one casing assumption and the newer runtime computes a different stimulus hash, a resume operation can fail to find what looks like the "same" event from a user's point of view.
 

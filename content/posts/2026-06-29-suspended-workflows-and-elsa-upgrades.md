@@ -3,7 +3,7 @@ title: "Suspended Workflows Are Runtime State, Not Just Definitions"
 slug: "suspended-workflows-and-elsa-upgrades"
 description: "A practical look at what happens when Elsa workflows are suspended during an upgrade, and why persisted state and bookmarks need their own migration plan."
 publishedAt: "2026-06-29"
-updatedAt: "2026-08-23"
+updatedAt: "2026-08-31"
 status: "published"
 authors:
   - "sipke"
@@ -38,7 +38,7 @@ That distinction matters during upgrades.
 > - Type aliases and forwarded types help with some compatibility cases, but they are not a general suspended-instance upgrader.
 > - Production upgrades should drain long-running instances, test real persisted records, or migrate the affected records deliberately.
 
-This is the upgrade-side companion to [workflow alterations in Elsa 3.8](/blog/workflow-alterations-in-elsa-3-8), [Groundwork's persistence boundary](/blog/groundwork-and-the-persistence-boundary-in-elsa), and the diagnostics work around [OpenTelemetry in Elsa 3.8](/blog/opentelemetry-diagnostics-in-elsa-3-8). Alterations and observability help you operate live state, but old suspended data still needs an explicit upgrade plan when version boundaries change its shape.
+This is the upgrade-side companion to [workflow alterations in Elsa 3.8](/blog/workflow-alterations-in-elsa-3-8), [Elsa 3.8 StateMachine transition semantics](/blog/elsa-3-8-state-machine-runtime-studio), [Groundwork's persistence boundary](/blog/groundwork-and-the-persistence-boundary-in-elsa), and the diagnostics work around [OpenTelemetry in Elsa 3.8](/blog/opentelemetry-diagnostics-in-elsa-3-8). Alterations and observability help you operate live state, but old suspended data still needs an explicit upgrade plan when version boundaries change its shape.
 
 ## What does resume actually load?
 

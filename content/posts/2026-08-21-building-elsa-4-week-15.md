@@ -3,7 +3,7 @@ title: "Building Elsa 4 · Week 15: Less Framework, Explicit Lifetimes"
 slug: "building-elsa-4-week-15"
 description: "Week 15 moves first-party REST APIs to Minimal APIs while preserving public contracts, centralizing permissions, and separating stable DTOs from unloadable code."
 publishedAt: "2026-08-21"
-status: "draft"
+status: "published"
 authors: ["sipke"]
 category: "Engineering"
 tags: ["elsa-workflows", "dotnet", "devjournal", "software-architecture"]

@@ -8,6 +8,10 @@ authors: ["sipke"]
 category: "Engineering"
 tags: ["elsa-workflows", "dotnet", "devjournal", "software-architecture"]
 series: "Building Elsa 4"
+featuredImage: "../assets/2026-07-10-building-elsa-4-week-9/featured.png"
+featuredImageAlt: "Three connected translucent compartments depict workflow definitions, execution infrastructure, and inspection interfaces."
+seoTitle: "Building Elsa 4 Week 15: Explicit API Lifetimes"
+seoDescription: "Follow Elsa 4's Minimal API migration, Foundation Identity permissions, OpenAPI lifetime boundaries, and the compatibility guarantees preserved during retirement."
 excerpt: "Retiring an endpoint framework is only useful if the public contracts, permission rules, and module lifecycle remain understandable afterward."
 ---
 

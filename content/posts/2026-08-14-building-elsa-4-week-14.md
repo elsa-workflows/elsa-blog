@@ -3,7 +3,7 @@ title: "Building Elsa 4 · Week 14: One Workflow, More Than One Store"
 slug: "building-elsa-4-week-14"
 description: "Week 14 gives Groundwork persistence lanes named targets and makes split-store activity publication converge through ordered writes, with recovery limits visible."
 publishedAt: "2026-08-14"
-status: "draft"
+status: "published"
 authors: ["sipke"]
 category: "Engineering"
 tags: ["elsa-workflows", "dotnet", "devjournal", "software-architecture"]

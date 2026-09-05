@@ -3,7 +3,7 @@ title: "Building Elsa 4 · Week 16: Changing the Decision, Keeping the Contract"
 slug: "building-elsa-4-week-16"
 description: "Week 16 revises API assembly and endpoint-authoring decisions in public, adopts NativeEndpoints, and keeps Elsa's permissions and published conventions explicit."
 publishedAt: "2026-08-28"
-status: "draft"
+status: "published"
 authors: ["sipke"]
 category: "Engineering"
 tags: ["elsa-workflows", "dotnet", "devjournal", "software-architecture"]
@@ -54,7 +54,9 @@ The two lifetime decisions should not be conflated. A shared library avoiding st
 
 The generic framework moved into NativeEndpoints; Elsa's own vocabulary stayed in Elsa. [The August 27 project file](https://github.com/elsa-workflows/elsa-foundation/blob/b20eb9bd340a3988e8a411a216d02bf39bcc3193/src/Elsa/Api/AspNetCore/Elsa.Api.AspNetCore.csproj) now references the package, while [central package configuration](https://github.com/elsa-workflows/elsa-foundation/blob/b20eb9bd340a3988e8a411a216d02bf39bcc3193/Directory.Packages.props) pins the NativeEndpoints family to `1.0.0-preview.6`. This is an inspectable dependency change, not just a proposed extraction.
 
-[ADR 0071's externalization section](https://github.com/elsa-workflows/elsa-foundation/blob/b20eb9bd340a3988e8a411a216d02bf39bcc3193/docs/adr/0071-first-party-rest-apis-use-endpoint-classes.md) records the deletion of `Elsa.Api.Endpoints` and the smaller role of `Elsa.Api.AspNetCore`. That remaining layer owns endpoint ownership, security disposition, authorization integration, mediator bridges, and Elsa's operation-identifier scheme.
+[ADR 0071's externalization section](https://github.com/elsa-workflows/elsa-foundation/blob/b20eb9bd340a3988e8a411a216d02bf39bcc3193/docs/adr/0071-first-party-rest-apis-use-endpoint-classes.md) records the deletion of `Elsa.Api.Endpoints` and the smaller role of `Elsa.Api.AspNetCore`. The [remaining layer](https://github.com/elsa-workflows/elsa-foundation/blob/b20eb9bd340a3988e8a411a216d02bf39bcc3193/src/Elsa/Api/AspNetCore/ElsaEndpointConventions.cs) holds Elsa's endpoint ownership, security-disposition, authoring-model, and host-credential metadata and conventions, including its operation-identifier scheme.
+
+Other Elsa-owned integrations do not all live in that layer. [Foundation Identity owns the permission attribute and policy integration](https://github.com/elsa-workflows/elsa-foundation/blob/b20eb9bd340a3988e8a411a216d02bf39bcc3193/src/Elsa/Foundation/Identity/Abstractions/Authorization/AuthorizationContracts.cs). The [API extension-point inventory](https://github.com/elsa-workflows/elsa-foundation/blob/b20eb9bd340a3988e8a411a216d02bf39bcc3193/src/Elsa/Api/EXTENSION_POINTS.md) marks the earlier `Elsa.Api.Mediator` bridge as retired. The ADR's broader ownership discussion should not be read as an inventory of surviving bridges.
 
 The package doesn't need to learn what an Elsa permission means or which dynamic shell owns a route. Those concepts are attached through convention extension points. [elsa-workflows/elsa-foundation#1454](https://github.com/elsa-workflows/elsa-foundation/pull/1454) is the package-adoption change. The [NativeEndpoints introduction](/blog/introducing-nativeendpoints) provides broader context; this week's source shows where Elsa draws its side of the boundary.
 

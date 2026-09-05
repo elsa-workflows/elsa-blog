@@ -3,7 +3,7 @@ title: "Building Elsa 4 · Week 12: Recovery Has More Than One Contract"
 slug: "building-elsa-4-week-12"
 description: "Week 12 separates durable runtime alteration jobs from interactive design recovery, making target snapshots, atomicity, retries, and unknown outcomes explicit."
 publishedAt: "2026-07-31"
-status: "draft"
+status: "published"
 authors: ["sipke"]
 category: "Engineering"
 tags: ["elsa-workflows", "dotnet", "devjournal", "software-architecture"]

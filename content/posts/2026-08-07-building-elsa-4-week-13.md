@@ -3,7 +3,7 @@ title: "Building Elsa 4 · Week 13: Absence Needs Evidence"
 slug: "building-elsa-4-week-13"
 description: "Week 13 proposes execution evidence tied to committed checkpoints, explicit capture sessions, and complete ranges that distinguish absence from delivery lag."
 publishedAt: "2026-08-07"
-status: "draft"
+status: "published"
 authors: ["sipke"]
 category: "Engineering"
 tags: ["elsa-workflows", "dotnet", "devjournal", "software-architecture"]

@@ -3,7 +3,7 @@ title: "Building Elsa 4 · Week 11: Shortcuts with Guardrails"
 slug: "building-elsa-4-week-11"
 description: "Week 11 cuts ReplaySafe scheduler dispatches while preserving durable fallback paths, and makes BPMN race cleanup and its limitations explicit in source."
 publishedAt: "2026-07-24"
-status: "draft"
+status: "published"
 authors: ["sipke"]
 category: "Engineering"
 tags: ["elsa-workflows", "dotnet", "devjournal", "software-architecture"]

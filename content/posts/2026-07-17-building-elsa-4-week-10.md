@@ -3,7 +3,7 @@ title: "Building Elsa 4 · Week 10: Identity Is Not Authority"
 slug: "building-elsa-4-week-10"
 description: "Week 10 separates executable identity from publication authority, keeps layout with source references, and makes Studio publication a reviewable operation."
 publishedAt: "2026-07-17"
-status: "draft"
+status: "published"
 authors: ["sipke"]
 category: "Engineering"
 tags: ["elsa-workflows", "dotnet", "devjournal", "software-architecture"]

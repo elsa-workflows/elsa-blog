@@ -8,6 +8,8 @@ authors: ["sipke"]
 category: "Engineering"
 tags: ["elsa-workflows", "dotnet", "devjournal", "software-architecture"]
 series: "Building Elsa 4"
+featuredImage: "../assets/2026-08-07-building-elsa-4-week-13/featured.png"
+featuredImageAlt: "A checkpoint press feeds an incomplete open evidence rail and a complete bounded rail inspected through a brass hoop."
 excerpt: "A test timing out is not proof that an activity never ran. Week 13 designs the evidence needed to tell those cases apart."
 ---
 

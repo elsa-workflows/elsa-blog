@@ -8,8 +8,8 @@ authors: ["sipke"]
 category: "Engineering"
 tags: ["elsa-workflows", "dotnet", "devjournal", "software-architecture"]
 series: "Building Elsa 4"
-featuredImage: "../assets/2026-07-10-building-elsa-4-week-9/featured.png"
-featuredImageAlt: "Three connected translucent compartments depict workflow definitions, execution infrastructure, and inspection interfaces."
+featuredImage: "../assets/2026-08-14-building-elsa-4-week-14/featured.png"
+featuredImageAlt: "Separate Runtime and Design stores connect through ordered publication stages ending in a distinct receipt tray."
 seoTitle: "Building Elsa 4 Week 14: More Than One Store"
 seoDescription: "Named Groundwork targets separate persistence lanes. Follow split-store publication, ordered writes, recovery boundaries, and the remaining cleanup limits."
 excerpt: "Separating Design and Runtime in code is only part of the job. Separate databases force publication to reveal its real consistency boundary."

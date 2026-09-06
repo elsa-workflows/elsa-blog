@@ -8,8 +8,8 @@ authors: ["sipke"]
 category: "Engineering"
 tags: ["elsa-workflows", "dotnet", "devjournal", "software-architecture"]
 series: "Building Elsa 4"
-featuredImage: "../assets/2026-07-10-building-elsa-4-week-9/featured.png"
-featuredImageAlt: "Three connected translucent compartments depict workflow definitions, execution infrastructure, and inspection interfaces."
+featuredImage: "../assets/2026-07-17-building-elsa-4-week-10/featured.png"
+featuredImageAlt: "A cobalt executable artifact connects to two publication references and a separate start-authority gate on a dark drafting bench."
 seoTitle: "Building Elsa 4 Week 10: Identity Is Not Authority"
 seoDescription: "Week 10 separates executable identity from publication authority, keeps layout with source references, and makes Studio publication a reviewable operation."
 excerpt: "A workflow artifact tells us what will run. A publication slot tells us whether new work may start. Week 10 makes that distinction explicit."

@@ -8,6 +8,8 @@ authors: ["sipke"]
 category: "Engineering"
 tags: ["elsa-workflows", "dotnet", "devjournal", "software-architecture"]
 series: "Building Elsa 4"
+featuredImage: "../assets/2026-07-31-building-elsa-4-week-12/featured.png"
+featuredImageAlt: "A sealed cohort of independent execution capsules sits apart from an authoritative state block reached through a reconnected cable."
 excerpt: "A durable bulk operation and an interrupted editor request should not acquire the same recovery machinery by accident."
 ---
 

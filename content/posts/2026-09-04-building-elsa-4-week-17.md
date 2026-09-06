@@ -15,6 +15,8 @@ tags:
   - "groundwork"
   - "workflow-runtime"
 series: "Building Elsa 4"
+featuredImage: "../assets/2026-09-04-building-elsa-4-week-17/featured.png"
+featuredImageAlt: "A circular maintenance bench aligns blank implementation records, clears terminal residue, closes a mailbox, and focuses an inspection lens."
 seoTitle: "Building Elsa 4 Week 17: Closing the Loop"
 seoDescription: "Week 17 adopts Groundwork 0.4.0-preview.1 and closes the record on terminal runtime cleanup and focused Studio Inspector tabs."
 excerpt: "A consolidation week makes Elsa 4's persistence boundaries, terminal cleanup, and public implementation record easier to trust."

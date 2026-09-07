@@ -3,6 +3,7 @@ title: "How Elsa 3.8 State Machines Run: Runtime and Studio"
 slug: "elsa-3-8-state-machine-runtime-studio"
 description: "Elsa 3.8 defines a 7-step StateMachine transition lifecycle. Learn how competing triggers, persistence, automatic cycles, and Studio authoring behave."
 publishedAt: "2026-08-31"
+updatedAt: "2026-09-07"
 status: "published"
 authors:
   - "sipke"
@@ -37,7 +38,7 @@ That contract is now explicit in the [Elsa Core StateMachine changes](https://gi
 > - Triggerless cycles yield through the scheduler, and transition continuation identity is persisted in declaration order.
 > - Studio now presents transitions as **WHEN → ONLY IF → THEN → TO**, while preserving condition data it cannot currently edit.
 
-> **Availability:** The Core and Studio changes discussed here merged into the `release/3.8.0` branches on August 30-31, 2026, after the respective [Core](https://github.com/elsa-workflows/elsa-core/releases/tag/3.8.0-rc2) and [Studio](https://github.com/elsa-workflows/elsa-studio/releases/tag/3.8.0-rc2) 3.8.0 RC2 tags. They are not in those RC2 packages, and there is no final 3.8.0 package to point to yet. Evaluate them from post-merge `release/3.8.0` builds or aligned Feedz packages. Keep Core and Studio versions aligned while testing.
+> **Availability:** The Core and Studio changes discussed here are included in the stable 3.8.0 releases published on September 5, 2026. Keep Core, Studio, and API client packages aligned. The [Elsa 3.8 stable upgrade guide](/blog/elsa-3-8-stable-upgrade-guide) covers the release-wide compatibility, security, and migration checks.
 
 This is an implementation guide, not a release-note inventory. For broader preview context, see [Elsa 3.8 Preview 1](/blog/elsa-3-8-preview-1). For persisted runtime-state upgrades, see [Suspended Workflows Are Runtime State, Not Just Definitions](/blog/suspended-workflows-and-elsa-upgrades).
 
@@ -106,7 +107,7 @@ That matters when the server has extensions the designer does not. If Studio can
 
 Use a small workflow that exercises the boundaries:
 
-- Build from a post-merge `release/3.8.0` Core and Studio revision, or use aligned Feedz packages. Do not infer availability from 3.8.0 RC2.
+- Use aligned stable 3.8.0 Core, Studio, and API client packages.
 - Create one state with an automatic transition and an eventful alternative. Make the automatic condition false, send the event, and verify the alternative works.
 - Give every transition its own trigger. Reject one eventful condition, then send a competing event and verify it remains available.
 - Add a transition Action that can suspend, resume after persistence, and verify target state, continuation, and outbound scheduling.
@@ -130,9 +131,9 @@ A false triggerless condition leaves the state active and permits an eventful al
 
 No. The runtime rejects shared trigger identities. Use a separate trigger activity with a unique ID for each transition.
 
-### Is this behavior in Elsa 3.8.0 RC2?
+### Is this behavior available in stable Elsa 3.8.0?
 
-No. The changes merged to `release/3.8.0` after RC2. Use a later branch build or aligned Feedz packages while waiting for an official package that contains them.
+Yes. Core and Studio 3.8.0 include this behavior; RC2 did not. Use aligned stable Core, Studio, and API client packages.
 
 ## The practical takeaway
 

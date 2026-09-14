@@ -1,8 +1,9 @@
 ---
 title: "BPMN for .NET: The Shared Core for Elsa 4 and Elsa 3"
 slug: "bpmn-for-dotnet-shared-core-for-elsa-4-and-elsa-3"
-description: "BPMN for .NET separates BPMN 2.0 semantics and XML interchange from workflow hosting. Elsa 4 uses its interchange packages; Elsa 3 integration is planned."
+description: "BPMN for .NET separates BPMN 2.0 semantics and XML interchange from workflow hosting. Elsa 4 uses its interchange packages, and Elsa 3 now has a main-branch integration."
 publishedAt: "2026-08-09"
+updatedAt: "2026-09-14"
 status: "published"
 authors:
   - "sipke"
@@ -16,7 +17,7 @@ tags:
 featuredImage: "../assets/2026-08-09-bpmn-for-dotnet-shared-core-for-elsa-4-and-elsa-3/featured.png"
 featuredImageAlt: "A technical workbench with one BPMN process core connected to two different workflow runtime structures."
 seoTitle: "BPMN for .NET: One Core for Elsa 4 and Elsa 3"
-seoDescription: "BPMN for .NET provides host-neutral BPMN 2.0 interchange and semantics. Elsa 4 uses its interchange packages today; Elsa 3 is the intended second host."
+seoDescription: "BPMN for .NET provides host-neutral BPMN 2.0 interchange and semantics. Elsa 4 uses it, and Elsa 3 now has an end-to-end integration on main."
 redirectFrom: []
 related:
   - "why-elsa-4-rebuilding-a-dotnet-workflow-engine"
@@ -25,16 +26,16 @@ related:
 
 # BPMN for .NET: The Shared Core for Elsa 4 and Elsa 3
 
-Elsa 4 has a BPMN implementation. Elsa 3 doesn't—not yet. That created a slightly uncomfortable engineering question: should we port the implementation back, keep two copies, or make Elsa 3 depend on an Elsa 4 package and its release train?
+Elsa 4 has a BPMN implementation. When this article was first published, Elsa 3 did not. That created a slightly uncomfortable engineering question: should we port the implementation back, keep two copies, or make Elsa 3 depend on an Elsa 4 package and its release train?
 
 None of those is a good long-term answer.
 
-The better boundary turned out to be one we had already discovered while building BPMN support in Elsa 4: the code that knows what BPMN means is mostly independent from the code that knows how Elsa runs work. That observation led to [BPMN for .NET](https://bpmnfor.net/), a new MIT-licensed library for BPMN 2.0 interchange and semantics. Elsa 4 already consumes the extracted interchange packages and is the first host for the proposed semantics extraction. Elsa 3 is the intended, deferred second consumer—not a released integration.
+The better boundary turned out to be one we had already discovered while building BPMN support in Elsa 4: the code that knows what BPMN means is mostly independent from the code that knows how Elsa runs work. That observation led to [BPMN for .NET](https://bpmnfor.net/), a new MIT-licensed library for BPMN 2.0 interchange and semantics. Elsa 4 consumes the extracted interchange packages. Since this article was published, Elsa 3 has gained an end-to-end integration on its `main` branches. Read [BPMN in Elsa 3: Import, Bind, Run, and Export](/blog/bpmn-in-elsa-3-import-bind-run-export) for the current product slice and its limitations.
 
 > **Key Takeaways**
 > - BPMN for .NET owns BPMN 2.0 XML, the object model, and process semantics—not persistence, scheduling, retries, or I/O.
 > - The project's survey covered 88 C# repositories and 50 NuGet packages, but found no maintained, license-clean library with this exact boundary.
-> - Elsa 4 already consumes the shared interchange packages. Elsa 3 support is intended next, but is not released today.
+> - Elsa 4 already consumes the shared interchange packages. Elsa 3 now has a main-branch integration tracked for 3.9, but it is not part of the 3.8.1 package line.
 
 The project site is [bpmnfor.net](https://bpmnfor.net/), and the source is available at [github.com/valence-works/bpmn](https://github.com/valence-works/bpmn).
 
@@ -107,27 +108,27 @@ Elsa 4 is the first consumer because that is where the implementation came from.
 
 The extraction doesn't remove BPMN from Elsa. It narrows what Elsa owns.
 
-Under the proposed extraction, Elsa 4 keeps its `BpmnProcess` activity, feature registration, API endpoints, triggers, recurring schedules, expression integration, activity bindings, and persistence adapter. The shared library owns the BPMN model, XML interchange, token decisions, and the state pruning that requires BPMN knowledge.
+Under the extraction design, Elsa 4 keeps its `BpmnProcess` activity, feature registration, API endpoints, triggers, recurring schedules, expression integration, activity bindings, and persistence adapter. The shared library owns the BPMN model, XML interchange, token decisions, and the state pruning that requires BPMN knowledge.
 
-This transition is already visible in the code. [`Elsa.Activities.Bpmn.Interchange.csproj`](https://github.com/elsa-workflows/elsa-foundation/blob/main/src/Elsa/Activities/Bpmn/Interchange/Elsa.Activities.Bpmn.Interchange.csproj) references `Bpmn.Model` and `Bpmn.Interchange` packages. The engine remains the host. The extracted interchange layer is already in use; the semantics-host integration is the next part of the proposed extraction.
+This transition is visible in the code. [`Elsa.Activities.Bpmn.Interchange.csproj`](https://github.com/elsa-workflows/elsa-foundation/blob/main/src/Elsa/Activities/Bpmn/Interchange/Elsa.Activities.Bpmn.Interchange.csproj) references `Bpmn.Model` and `Bpmn.Interchange` packages. The engine remains the host while the shared packages own the host-neutral pieces.
 
-There is still integration work ahead for the semantics port, and that is deliberate. The [NuGet publishing workflow](https://github.com/valence-works/bpmn/blob/main/.github/workflows/packages.yml) currently releases `Bpmn.Model` and `Bpmn.Interchange` as stable packages while holding `Bpmn.Semantics` and `Bpmn.Runtime.InMemory` until a second host has validated the port. Publishing a surface too early would turn every correction into somebody else's breaking change.
+The package rollout preserved that boundary. The project first released only `Bpmn.Model` and `Bpmn.Interchange`, holding `Bpmn.Semantics` and `Bpmn.Runtime.InMemory` until a second host had tested the interpreter port. Elsa 3 supplied that evidence, and the [0.2.0 release](https://github.com/valence-works/bpmn/releases/tag/v0.2.0) made all four packages stable on August 20, 2026.
 
-## Why Elsa 3 can use the same core
+## How Elsa 3 now uses the same core
 
 Elsa 3 has a different runtime from Elsa 4. That is exactly why copying the feature or referencing an Elsa 4 package would be the wrong design.
 
-The shared library has no concept of an Elsa activity execution context, bookmark store, background worker, or persistence provider. An Elsa 3 adapter can translate the same commands into Elsa 3 scheduling, bookmarks, child activities, and recursive cancellation. Its release can follow Elsa 3's cadence rather than Elsa 4's. That matters because [Elsa 3 continues to evolve on its own line](/blog/elsa-3-8-preview-1).
+The shared library has no concept of an Elsa activity execution context, bookmark store, background worker, or persistence provider. The Elsa 3 adapter translates the same commands into Elsa 3 scheduling, bookmarks, child activities, and recursive cancellation. Its release can follow Elsa 3's cadence rather than Elsa 4's. That matters because [Elsa 3 continues to evolve on its own line](/blog/elsa-3-8-preview-1).
 
-The current status needs to be stated plainly: [Elsa Foundation ADR 0063](https://github.com/elsa-workflows/elsa-foundation/blob/main/docs/adr/0063-bpmn-moves-to-a-host-agnostic-library.md) names Elsa 3 as the intended second consumer, but deferred. It also records a throwaway Elsa 3 host-port spike as a verification gate, not released product code.
+The current status needs to be stated plainly: [Elsa Foundation ADR 0063](https://github.com/elsa-workflows/elsa-foundation/blob/main/docs/adr/0063-bpmn-moves-to-a-host-agnostic-library.md) named Elsa 3 as the intended second consumer. That integration now exists on the Elsa Core and Studio `main` branches under the 3.9 milestone, but it is not part of Elsa 3.8.1.
 
-So Elsa 3 doesn't support BPMN today. The important change is that adding it no longer means reimplementing BPMN, backporting Elsa 4 internals, or coupling two major versions. It means writing and testing an Elsa 3 host adapter against the same model and semantics Elsa 4 uses.
+The important change is that BPMN in Elsa 3 no longer means reimplementing BPMN, backporting Elsa 4 internals, or coupling two major versions. The product now imports and binds BPMN documents against the same model and semantics, runs them through an Elsa 3 host adapter, projects runtime diagnostics, and preserves the source for export.
 
 That is a much smaller—and much more maintainable—job.
 
 ## What is available now?
 
-The project is new and pre-1.0. `Bpmn.Model` and `Bpmn.Interchange` 0.1.1 are available on NuGet today. The semantics and in-memory runtime packages are available from source and preview builds, with their stable NuGet release intentionally waiting for second-host validation.
+The project is new and pre-1.0. Version 0.2.0 of `Bpmn.Model`, `Bpmn.Interchange`, `Bpmn.Semantics`, and `Bpmn.Runtime.InMemory` is available on NuGet. The first two packages can stand alone for tools that only need to read and write BPMN; the latter two add deterministic interpretation and a reference host.
 
 To read and write a BPMN file:
 
@@ -156,7 +157,7 @@ No. It provides BPMN interchange and semantics, not durable execution infrastruc
 
 ### Does Elsa 3 support BPMN now?
 
-Not yet. Elsa 3 is the intended second consumer of the shared semantics library. The adapter and product integration are planned work, and no Elsa 3 BPMN release has been made.
+On its `main` branches, yes. The Core and Studio integration can import, bind, run, diagnose, and export BPMN documents. It is tracked for Elsa 3.9 and is not part of the 3.8.1 stable package line. See the [current Elsa 3 BPMN guide](/blog/bpmn-in-elsa-3-import-bind-run-export) for the implemented slice and its limitations.
 
 ### Does it support every BPMN-adjacent standard?
 

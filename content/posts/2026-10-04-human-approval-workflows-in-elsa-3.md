@@ -64,12 +64,13 @@ Here is a thin expense-claim shape. It is the smallest graph that still proves t
 HTTP submit (claimId, employee, amount)
   -> validate (bad input: respond 400, stop)
   -> respond 202 with the workflow instance id
-  -> wait: "ClaimReviewed"            (one outstanding wait)
-  -> decision on the Event result
+  -> wait: "ClaimReviewed"            (or ClaimApproved / ClaimRejected)
+  -> bind Event Result to Review
+  -> decision on getReview().decision
        Approved -> mark Approved, finish
        Rejected -> mark NeedsChanges
                 -> wait: "ClaimRevised"
-                -> back to wait: "ClaimReviewed"   (same instance)
+                -> back to the review wait   (same instance)
 ```
 
 Three things in that sketch matter more than the rest.
@@ -97,11 +98,11 @@ Content-Type: application/json
 }
 ```
 
-The endpoint needs the `trigger:event` permission. Send the decision by `workflowInstanceId`, not by correlation id. The Event activity writes that input to its result; the next step reads `decision` from that result (for example `result.decision`). The body field `workflowExecutionMode` defaults to asynchronous: the call returns a 200 after dispatch, before the workflow resumes, so resume errors show up in the journal and incidents, not in the response.
+The endpoint needs the `trigger:event` permission. Send the decision by `workflowInstanceId`, not by correlation id. Bind the Event Result to a variable (for example `Review`) and read `getReview().decision`. The body field `workflowExecutionMode` defaults to asynchronous: the call returns a 200 after dispatch, before the workflow resumes, so resume errors show up in the journal and incidents, not in the response.
 
-**Tokenized resume URL.** For an email "Approve / Reject" link, use `GenerateBookmarkTriggerUrl` and `GET` or `POST /bookmarks/resume`. That URL targets one bookmark and can carry the decision as input (`?in=` or the body). Bookmarks are already single-use by default. Do not use `GenerateEventTriggerUrl` for this: it is tied to the event and instance, not a bookmark; the anonymous GET carries no input, and in the reject loop it can resume the next review wait. Or use one event per choice, for example `ClaimApproved` and `ClaimRejected`. Both token endpoints are anonymous, so treat the URL like a secret.
+**Tokenized resume URL.** For an Event wait, mint one link per choice with `createEventTriggerUrl` in JavaScript (Liquid has no token helper), for example `ClaimApproved` and `ClaimRejected`, each with a short lifetime. The anonymous GET carries no input, so the event name is the decision. An old `ClaimApproved` link can still approve a later round, so have the app ignore clicks for a review that is already closed (check a review round number before sending the stimulus, or ignore events once the claim status has moved on). Bookmark tokens (`GenerateBookmarkTriggerUrl` and `GET` or `POST /elsa/api/bookmarks/resume?async=true`) are C# only: use them from a custom blocking activity that creates its own bookmark. Both token endpoints are anonymous, so treat the URL like a secret.
 
-Whichever you pick, **scope the stimulus** with the instance id or a bookmark token. An unscoped event is a broadcast, and in 3.8 an unscoped stimulus is also tried as a start trigger first.
+Whichever you pick, **scope the stimulus** with the instance id. An unscoped event is a broadcast, and in 3.8 an unscoped stimulus is also tried as a start trigger first.
 
 ## 5. Reject and resubmit: rewind is a design choice
 
@@ -119,7 +120,7 @@ And pick one style per workflow. Mixing both in the same flow is how teams end u
 
 ## 6. Where state lives
 
-Most "my variables vanished" stories are really "I put state in the wrong place" stories. Code-first variables have no storage driver by default, so they are not saved across a wait. Use Workflow Instance storage for anything that must survive the suspend.
+Most "my variables vanished" stories are really "I put state in the wrong place" stories. Code-first variables have no storage driver by default, so they are not saved across a wait. Use Workflow Instance storage for anything that must survive the suspend: in Studio it is the Storage option in the variable dialog (the default for new variables), and in code it is `.WithWorkflowStorage()`.
 
 | State | Lives in | Use it for |
 |-------|----------|------------|
@@ -134,7 +135,7 @@ Two rules of thumb:
 
 ## 7. Correlation: find the instance by business key
 
-Set the instance **correlation id** to your business key (here the claim id). Use it to find or look up the right instance from the claim screen. Do not resume the wait by correlation id: a correlation-only stimulus can still start a new workflow. Send the decision by instance id or a bookmark token.
+Set the instance **correlation id** to your business key (here the claim id). Use it to find or look up the right instance from the claim screen. Do not resume the wait by correlation id: a correlation-only stimulus can still start a new workflow. Send the decision by instance id.
 
 Correlation links instances. It does not merge their variables.
 
@@ -143,7 +144,7 @@ Correlation links instances. It does not merge their variables.
 - **Publish, then drive it for real.** Trigger workflows only receive traffic once the definition is published. Test with real HTTP calls, not only Studio Run.
 - **Payload shape matters.** Here payload means the stimulus, not the input. If you build custom blocking activities, the stimulus must match the shape the bookmark was created with, or the hash lookup misses.
 - **Who is allowed to decide.** The API permission says who may call Elsa. It does not say this person may approve this claim. Check that in your app before you send the stimulus.
-- **Retries and double clicks.** Approval callbacks get retried. Bookmarks are already single-use by default. Make the business action idempotent so a retry does not apply the decision twice.
+- **Retries and double clicks.** Approval callbacks get retried. Make the business action idempotent so a retry does not apply the decision twice. Event token links stay valid for their lifetime, so ignore clicks for a review round that is already closed. Bookmarks are already single-use by default.
 - **Read the journal.** When a claim "did something weird", open the instance and follow status, then journal, then incidents. The branch that actually ran is right there.
 
 ## Wrap-up

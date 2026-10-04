@@ -64,7 +64,8 @@ Here is a thin expense-claim shape. It is the smallest graph that still proves t
 HTTP submit (claimId, employee, amount)
   -> validate (bad input: respond 400, stop)
   -> respond 202 with the workflow instance id
-  -> wait for the review              (one outstanding wait)
+  -> set Round to 1
+  -> wait for the review              (one open review round; on the link path, two Event waits that close together)
        API:   Event "ClaimReviewed", Result bound to Review
        Links: Event "ClaimApproved-<round>" or "ClaimRejected-<round>",
               joined by a Join (Wait any); each branch sets Review
@@ -79,7 +80,7 @@ Three things in that sketch matter more than the rest.
 
 **Respond before you wait.** If an HTTP-started workflow reaches the human wait before it writes a response, the request completes with an empty 200 and the caller never learns the instance id. Answer the submit first (202 Accepted is honest) and include the instance id the caller needs later.
 
-**One outstanding wait at a time.** Several open bookmarks plus "which call resumes which wait" gets confusing fast. Start with one pause point at a time. Add parallel reviewers later, on purpose.
+**One review step at a time.** Several open bookmarks plus "which call resumes which wait" gets confusing fast. Start with one open review round at a time (on the link path, two Event waits that close together). Add parallel reviewers later, on purpose.
 
 **The wait must not start new workflows.** In Elsa 3.8 a start trigger has to be a trigger activity that is marked as able to start a workflow. That flag is off by default. If the event you wait on can also start the workflow, a decision event might start a brand new instance instead of resuming yours. For an inline human wait, keep it off.
 
@@ -122,7 +123,7 @@ And pick one style per workflow. Mixing both in the same flow is how teams end u
 
 ## 6. Where state lives
 
-Most "my variables vanished" stories are really "I put state in the wrong place" stories. Code-first variables have no storage driver by default, so they are not saved across a wait. Use Workflow Instance storage for anything that must survive the suspend: in Studio it is the Storage option in the variable dialog (the default for new variables), and in code it is `.WithWorkflowStorage()`. `Review` and `Round` both need that storage.
+Most "my variables vanished" stories are really "I put state in the wrong place" stories. Code-first variables have no storage driver by default, so they are not saved across a wait. Use Workflow Instance storage for anything that must survive the suspend: in Studio it is the Storage option in the variable dialog (the default for new variables), and in code it is `.WithWorkflowStorage()`. `Review` and `Round` (starts at 1) both need that storage.
 
 | State | Lives in | Use it for |
 |-------|----------|------------|
@@ -151,7 +152,7 @@ Correlation links instances. It does not merge their variables.
 
 ## Wrap-up
 
-The whole pattern fits in a sentence: submit, answer the caller, wait on one bookmark, resume with a decision, and on reject loop back on the same instance (or start a fresh one, on purpose).
+The whole pattern fits in a sentence: submit, answer the caller, wait on one open review round, resume with a decision, and on reject loop back on the same instance (or start a fresh one, on purpose).
 
 Start that thin. Add a second reviewer, a timeout, or a child workflow only once this version reads cleanly in the journal.
 

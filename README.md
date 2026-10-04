@@ -55,6 +55,17 @@ https://www.elsaworkflows.io/blog/{slug}
 
 Draft posts use `status: "draft"` and are excluded from public artifacts.
 
+## Publishing a post
+
+Merging a post in `content/posts/YYYY-MM-DD-slug.md` to `main` runs the `Build blog` workflow (validate, build, deploy to GitHub Pages), which updates `https://elsa-workflows.github.io/elsa-blog/index.json` and `posts/<slug>.json` that `www.elsaworkflows.io/blog` (`elsa-workflows/elsa-hub`, published via Lovable) reads client-side, so the post shows to readers right away. Elsa-hub only writes the crawler-facing prerendered `/blog/<slug>.html` and the sitemap entry at its own build, and Lovable only rebuilds on a new elsa-hub commit, so bump root `blog-sync.json` (`latestSlug`, `blogCommit` as the full elsa-blog `main` SHA, `syncedAt` as `YYYY-MM-DD`) in a one-line PR to trigger that rebuild.
+
+1. Merge the post PR to `main`.
+2. Wait for the `Build blog` run on that commit to go green (validate, build, deploy), for example `gh run list -R elsa-workflows/elsa-blog --branch main`.
+3. Check the post is in `index.json` and `posts/<slug>.json` returns 200.
+4. Open a PR on `elsa-workflows/elsa-hub` that updates `blog-sync.json` (`latestSlug`, `blogCommit` = the merge commit SHA, `syncedAt`) and merge it.
+5. Publish elsa-hub in Lovable. A publish with no new elsa-hub commit does not rebuild, so step 4 is required.
+6. Verify: `https://www.elsaworkflows.io/blog/<slug>` loads; `https://www.elsaworkflows.io/blog/<slug>.html` returns 200 and contains `data-prerendered`, a single `<title>` and canonical, and og tags (curl with a Googlebot user agent); `https://www.elsaworkflows.io/sitemap.xml` lists `/blog/<slug>`.
+
 ## Licensing
 
 Code and automation in this repository are licensed under MIT.

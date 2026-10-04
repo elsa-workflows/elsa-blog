@@ -39,7 +39,7 @@ This post walks through the pattern in Elsa 3 (3.8.4). It is about the shape and
 
 In Elsa 3, a workflow does not sit in memory waiting for your manager to come back from lunch.
 
-When the workflow reaches a blocking activity, that activity creates a **bookmark** and the instance suspends. Elsa persists the bookmark, the variables, and the execution log. Later, a matching **stimulus** resumes the instance from that bookmark.
+When the workflow reaches a blocking activity, that activity creates a **bookmark** and the instance suspends. Elsa persists the bookmark, the execution log, and any variables that use Workflow Instance storage. Later, a matching **stimulus** resumes the instance from that bookmark.
 
 That has two consequences:
 
@@ -65,7 +65,7 @@ HTTP submit (claimId, employee, amount)
   -> validate (bad input: respond 400, stop)
   -> respond 202 with the workflow instance id
   -> wait: "ClaimReviewed"            (one outstanding wait)
-  -> decision on the review input
+  -> decision on the Event result
        Approved -> mark Approved, finish
        Rejected -> mark NeedsChanges
                 -> wait: "ClaimRevised"
@@ -74,11 +74,11 @@ HTTP submit (claimId, employee, amount)
 
 Three things in that sketch matter more than the rest.
 
-**Respond before you wait.** If an HTTP-started workflow reaches the human wait before it writes a response, the caller's request just hangs. Answer the submit first (202 Accepted is honest) and include the instance id the caller needs later.
+**Respond before you wait.** If an HTTP-started workflow reaches the human wait before it writes a response, the request completes with an empty 200 and the caller never learns the instance id. Answer the submit first (202 Accepted is honest) and include the instance id the caller needs later.
 
 **One outstanding wait at a time.** Several open bookmarks plus "which call resumes which wait" gets confusing fast. Start with one pause point at a time. Add parallel reviewers later, on purpose.
 
-**The wait must not start new workflows.** In Elsa 3.8 a start trigger has to be a trigger activity that is marked as able to start a workflow. If the event you wait on can also start the workflow, a decision event might start a brand new instance instead of resuming yours. For an inline human wait, switch that off.
+**The wait must not start new workflows.** In Elsa 3.8 a start trigger has to be a trigger activity that is marked as able to start a workflow. That flag is off by default. If the event you wait on can also start the workflow, a decision event might start a brand new instance instead of resuming yours. For an inline human wait, keep it off.
 
 ## 4. Sending the decision in
 
@@ -97,11 +97,11 @@ Content-Type: application/json
 }
 ```
 
-The endpoint needs the `trigger:event` permission. It also accepts a correlation id instead of an instance id. Check the execution mode: the docs note it defaults to asynchronous.
+The endpoint needs the `trigger:event` permission. Send the decision by `workflowInstanceId`, not by correlation id. The Event activity writes that input to its result; the next step reads `decision` from that result (for example `result.decision`). The body field `workflowExecutionMode` defaults to asynchronous: the call returns a 200 after dispatch, before the workflow resumes, so resume errors show up in the journal and incidents, not in the response.
 
-**Tokenized resume URL.** A bookmark can generate a protected URL (good for an "Approve / Reject" link in an email). Give it a lifetime, and use a single-use bookmark (`AutoBurn`) when a link must only work once. Treat the URL like a secret.
+**Tokenized resume URL.** For an email "Approve / Reject" link, use `GenerateBookmarkTriggerUrl` and `GET` or `POST /bookmarks/resume`. That URL targets one bookmark and can carry the decision as input (`?in=` or the body). Bookmarks are already single-use by default. Do not use `GenerateEventTriggerUrl` for this: it is tied to the event and instance, not a bookmark; the anonymous GET carries no input, and in the reject loop it can resume the next review wait. Or use one event per choice, for example `ClaimApproved` and `ClaimRejected`. Both token endpoints are anonymous, so treat the URL like a secret.
 
-Whichever you pick, **scope the stimulus to the instance** (instance id or correlation). An unscoped event is a broadcast, and in 3.8 an unscoped stimulus is also tried as a start trigger first.
+Whichever you pick, **scope the stimulus** with the instance id or a bookmark token. An unscoped event is a broadcast, and in 3.8 an unscoped stimulus is also tried as a start trigger first.
 
 ## 5. Reject and resubmit: rewind is a design choice
 
@@ -119,31 +119,31 @@ And pick one style per workflow. Mixing both in the same flow is how teams end u
 
 ## 6. Where state lives
 
-Most "my variables vanished" stories are really "I put state in the wrong place" stories.
+Most "my variables vanished" stories are really "I put state in the wrong place" stories. Code-first variables have no storage driver by default, so they are not saved across a wait. Use Workflow Instance storage for anything that must survive the suspend.
 
 | State | Lives in | Use it for |
 |-------|----------|------------|
-| Workflow variables | this instance | routing data for this run: claim id, status, latest decision |
+| Workflow variables | this instance, Workflow Instance storage | routing data for this run: claim id, status, latest decision |
 | Bookmarks | runtime persistence | the pause point until a stimulus arrives |
 | Your database | your app | the claim itself, its versions, the audit trail, anything another workflow or report reads |
 
 Two rules of thumb:
 
-- If it must outlive the workflow instance, it belongs in your database. Retention policies can clean up finished instances; your audit trail should not disappear with them.
+- If it must outlive the workflow instance, it belongs in your database. Retention cleanup comes from an elsa-extensions module and can remove finished instances; your audit trail should not disappear with them.
 - If you later split work into parent and child workflows, child variables are not the parent's variables. Pass data through explicit inputs and outputs.
 
 ## 7. Correlation: find the instance by business key
 
-Set the instance **correlation id** to your business key (here the claim id). Then you can find the right instance from the claim screen, and an integration can send a stimulus by correlation instead of storing instance ids everywhere.
+Set the instance **correlation id** to your business key (here the claim id). Use it to find or look up the right instance from the claim screen. Do not resume the wait by correlation id: a correlation-only stimulus can still start a new workflow. Send the decision by instance id or a bookmark token.
 
 Correlation links instances. It does not merge their variables.
 
 ## 8. What to watch for
 
 - **Publish, then drive it for real.** Trigger workflows only receive traffic once the definition is published. Test with real HTTP calls, not only Studio Run.
-- **Payload shape matters.** If you build custom blocking activities, the resume payload must match the shape the bookmark was created with, or the hash lookup misses.
+- **Payload shape matters.** Here payload means the stimulus, not the input. If you build custom blocking activities, the stimulus must match the shape the bookmark was created with, or the hash lookup misses.
 - **Who is allowed to decide.** The API permission says who may call Elsa. It does not say this person may approve this claim. Check that in your app before you send the stimulus.
-- **Retries and double clicks.** Approval callbacks get retried. Make the business action idempotent, and use single-use bookmarks where a decision must only count once.
+- **Retries and double clicks.** Approval callbacks get retried. Bookmarks are already single-use by default. Make the business action idempotent so a retry does not apply the decision twice.
 - **Read the journal.** When a claim "did something weird", open the instance and follow status, then journal, then incidents. The branch that actually ran is right there.
 
 ## Wrap-up

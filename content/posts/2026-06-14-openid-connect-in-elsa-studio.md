@@ -182,7 +182,7 @@ You also still need to decide what authorization means for your application.
 
 OIDC answers who the user is and how Studio gets a token. It does not automatically design your permission model, tenant model, role mappings, or resource-level access rules. Elsa has its own identity and authorization pieces, and there has been recent hardening work around API keys, token purposes, SignalR authorization, and secure defaults. OIDC fits into that wider security story; it is not the whole story by itself.
 
-For the built-in side of that boundary, [managing Elsa users and roles in Studio 3.8](/blog/managing-elsa-users-and-roles-in-studio-3-8) explains the permission-aware administration screens and the server checks behind them.
+For the built-in side of that boundary, [managing Elsa users and roles in Studio 3.9](/blog/managing-elsa-users-and-roles-in-studio-3-9) explains the structured permission model, permission-aware administration screens, and server checks behind them.
 
 That distinction is worth keeping clear.
 

@@ -40,9 +40,13 @@ We publish the real `1.1.0` packages once to that shared feed. Each host reconci
 
 Installed and serving are different states.
 
-With the migration policy set to `Validate`, attempting to activate the new release checks the database first. In the rehearsal, both hosts refused with HTTP 409 because the required migration had not been applied. The response identified the missing migration, and the previous shell kept serving.
+With the migration policy set to `Validate`, attempting to activate the new release checks the database first. In the earlier API rehearsal, both hosts refused with HTTP 409 because the required migration had not been applied. The response identified the missing migration, and the previous shell kept serving. The fresh screenshot walkthrough repeated A's refusal.
 
 That is the behavior I care about here. A refused activation is useful when it tells you what is missing and leaves the working release in place.
+
+![Both hosts have 1.1.0 installed and still serve 1.0.0; A's activation is held by Validate.](../assets/2026-10-05-elsa-4-modules-without-restart/02-activation-refused.jpg)
+
+*Fresh cockpit capture: A refused activation while both hosts continued serving `1.0.0`. The update was already installed on each host.*
 
 Applying the migration is an explicit operation. Reloading a shell is another explicit operation. `Validate` does not quietly apply the migration for you, and installing the package does not mean its new code is already serving requests.
 
@@ -72,6 +76,10 @@ After the migration, we reload A. It starts serving module `1.1.0`, while B stil
 
 The new column now exists. The premium feature on A is still dormant.
 
+![A serves 1.1.0 while B serves 1.0.0, and the premium feature waits for all hosts.](../assets/2026-10-05-elsa-4-modules-without-restart/03-mixed-fleet.jpg)
+
+*After migration and A's reload, the older B reader still holds the feature back. The original renewal remains visible.*
+
 A looks ready if you only watch its package version and the new database column.
 
 B is still a live reader that advertises only schema-family version `1.0.0`. The additive migration can coexist with it, but the family stays finalized at `1.0.0` until every counted reader can handle `2.0.0`. That keeps the premium feature dormant and prevents new `2.0.0` writes during the mixed period. A nullable column alone does not make the older reader compatible with the new contract.
@@ -96,9 +104,25 @@ The demonstrated migration is additive. A destructive change, such as dropping a
 
 The package update does not silently upgrade the nodes in a workflow.
 
-In Studio, we refresh the activity catalog, select the Register renewal node, and explicitly change that occurrence to contract `1.1.0`. The optional Proposed premium input then becomes available. After fleet readiness is green, we enter `1250`, save and publish the workflow, and execute it.
+In Studio, we refresh the activity catalog, select the Register renewal node, and explicitly change that occurrence to contract `1.1.0`. The optional Proposed premium input then becomes available. After fleet readiness is green, we enter `1250`, save and publish the workflow, then run Studio's draft test.
 
-The recorded browser walkthrough shows a completed linked run and a new row with a numeric premium of `1250`. The earlier row remains intact. Running the activity again creates another renewal record, even when the policy reference is the same.
+![Studio offers an explicit change from contract 1.0.0 to 1.1.0 for the selected node.](../assets/2026-10-05-elsa-4-modules-without-restart/04-explicit-contract-upgrade.jpg)
+
+*The refreshed catalog preserves the original contract. Applying `1.1.0` changes this occurrence in the current draft.*
+
+![The saved Register renewal node has policy reference POL-2048 and Proposed premium 1250.](../assets/2026-10-05-elsa-4-modules-without-restart/05-premium-input.jpg)
+
+*The upgraded occurrence exposes the optional decimal input.*
+
+The fresh browser walkthrough shows that linked draft test completing and a new row with a numeric premium of `1250`. The earlier row remains intact. Running the activity again creates another renewal record, even when the policy reference is the same.
+
+![The linked Studio test run completed using RegisterRenewal 1.1.0 with premium 1250 and zero incidents.](../assets/2026-10-05-elsa-4-modules-without-restart/06-completed-premium-run.jpg)
+
+*This fresh capture is a draft test run after saving and publishing. Its linked execution shows contract `1.1.0`, the evaluated premium and zero incidents.*
+
+![Both hosts serve 1.1.0 with premium available, beside the old empty-premium row and new 1250 row.](../assets/2026-10-05-elsa-4-modules-without-restart/07-ready-with-preserved-data.jpg)
+
+*Both shells now serve the update. `POL-1042` retains its original timestamp and empty premium; `POL-2048` records the new amount.*
 
 Refreshing the catalog and changing a node's contract are separate choices. Refresh makes the new descriptor available; it does not rewrite the existing node.
 
@@ -123,6 +147,8 @@ If you maintain custom activities, preserving the old contract is therefore stil
 ## What we proved, and what remains open
 
 The 5 October demonstration includes actual cockpit and Studio browser interactions, plus a separate authenticated API rehearsal. It covers one shared publication, independent package installation, activation refusal before migration, migration application, staggered shell reloads, mixed-fleet feature dormancy, and a completed workflow using the new input. Both host processes and their binaries stayed in place through the measured upgrade.
+
+The screenshots above come from a fresh local walkthrough after an authorized reset. We checked the host PIDs and binary hashes before and after that update. Studio's first baseline publication needed recovery after an activation error; a new publication review succeeded. The two captured executions used Studio's draft test-run path. That preparation issue is part of this run's limits, even though the subsequent module rollout and premium execution completed.
 
 The database rehearsal used SQLite. PostgreSQL migrations exist in source, but this result is not a PostgreSQL rollout test. The setup is a local demonstration, and its timings are not a production performance claim.
 

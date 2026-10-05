@@ -23,7 +23,7 @@ redirectFrom: []
 related:
   - "elsa-3-8-preview-1"
   - "elsa-3-8-state-machine-runtime-studio"
-  - "managing-elsa-users-and-roles-in-studio-3-8"
+  - "managing-elsa-users-and-roles-in-studio-3-9"
   - "secret-references-in-elsa-3-8"
 ---
 

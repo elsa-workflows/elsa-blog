@@ -1,9 +1,9 @@
 ---
 title: "Updating Elsa 4 Modules Without Restarting the Host"
 slug: "elsa-4-modules-without-restart"
-description: "A two-host Elsa 4 demo separates package delivery, schema migration and shell activation, keeping the previous release serving until the database is compatible."
-publishedAt: "2026-10-05"
-status: "draft"
+description: "How Elsa 4 reloads module code inside a running .NET host, separating package delivery, database migration and activation through schema compatibility checks."
+publishedAt: "2026-10-06"
+status: "published"
 authors:
   - "sipke"
 category: "Engineering"
@@ -17,7 +17,7 @@ tags:
 featuredImage: "../assets/2026-10-05-elsa-4-modules-without-restart/featured.png"
 featuredImageAlt: "Two modular hosts connected to shared data layers, with an amber replacement module waiting beside a compatibility gate."
 seoTitle: "Elsa 4 Module Updates, Migrations and Schema Compatibility"
-seoDescription: "A practical Elsa 4 demonstration of module hot reload, explicit database migrations, schema compatibility checks and the limits of activity versioning."
+seoDescription: "Understand Elsa 4 module hot reload, explicit database migrations, schema compatibility gates and the limits of activity contract versioning."
 related:
   - "introducing-nuplane-nuget-packages-as-a-runtime-primitive"
 ---
@@ -28,47 +28,47 @@ We want to deploy module updates reliably while our servers keep running. That g
 
 Installing the package is only part of the job. The new code needs a schema it can use, and the other servers may still be running the previous release. If you switch too early, a perfectly good package can become a broken deployment.
 
-I wanted to make that boundary visible in a small demonstration: publish an update, try to activate it before the database is ready, and watch the old release keep serving. Then apply the migration and reload the hosts one at a time.
+Elsa 4 can reload module code inside a running .NET host. Package delivery, database migration and activation are separate steps, so acquiring an update does not have to mean switching to it immediately. If the database is not ready, activation can be refused while the previous release keeps serving.
 
-This is work in the evolving [Elsa 4 / Foundation codebase](https://github.com/elsa-workflows/elsa-foundation). It is not an Elsa 3 feature or an announcement of a stable Elsa 4 release. The demonstration gives us a concrete local result to discuss, including a few boundaries that matter quite a lot.
+These capabilities belong to the evolving [Elsa 4 / Foundation codebase](https://github.com/elsa-workflows/elsa-foundation). Elsa 4 is still under development. The mechanisms described here are useful to understand when designing modules and planning updates; they are not an announcement of a stable release.
 
 ## Start with the refusal
 
-The setup has two running hosts, A and B, sharing a database and a local package feed. Both start on module release `1.0.0`.
+Consider two running hosts, A and B, sharing a database and a package feed. Both start on module release `1.0.0`.
 
-We publish the real `1.1.0` packages once to that shared feed. Each host reconciles independently through Nuplane. Both can report `1.1.0` as installed while their shells still serve `1.0.0`.
+Publish the `1.1.0` packages once to that shared feed. Each host reconciles independently through Nuplane. Both can report `1.1.0` as installed while their shells still serve `1.0.0`.
 
 Installed and serving are different states.
 
-With the migration policy set to `Validate`, attempting to activate the new release checks the database first. In the earlier API rehearsal, both hosts refused with HTTP 409 because the required migration had not been applied. The response identified the missing migration, and the previous shell kept serving. The fresh screenshot walkthrough repeated A's refusal.
+With the migration policy set to `Validate`, attempting to activate the new release checks the database first. If a required EF module migration is missing, the shell reload is refused with HTTP 409. The response identifies the pending migration, and the previous shell stays active.
 
 That is the behavior I care about here. A refused activation is useful when it tells you what is missing and leaves the working release in place.
 
 ![Both hosts have 1.1.0 installed and still serve 1.0.0; A's activation is held by Validate.](../assets/2026-10-05-elsa-4-modules-without-restart/02-activation-refused.jpg)
 
-*Fresh cockpit capture: A refused activation while both hosts continued serving `1.0.0`. The update was already installed on each host.*
+*Both hosts have installed the update, but still serve `1.0.0`. Validate has held A's activation until the migration is applied.*
 
 Applying the migration is an explicit operation. Reloading a shell is another explicit operation. `Validate` does not quietly apply the migration for you, and installing the package does not mean its new code is already serving requests.
 
-## The renewal is just an example
+## Adding an optional input
 
 To make the change easy to follow, the sample module has a **Register renewal** activity. The original contract accepts a policy reference. Release `1.1.0` adds an optional `ProposedPremium` input and a nullable numeric column in the database.
 
 The module release moves from `1.0.0` to `1.1.0`; the schema family moves from `1.0.0` to `2.0.0`. Those version numbers describe different things. A package version is not a database schema version.
 
-The rehearsed SQLite column is `numeric(18,2)` and nullable. Existing renewal rows keep their identifiers, references and creation timestamps. Their premium remains `null`. Leaving the optional premium empty also means `null`, not zero. Zero would be a recorded amount; empty means no amount was supplied.
+For SQLite, the example's migration adds a nullable `numeric(18,2)` column. Existing renewal rows keep their identifiers, references and creation timestamps. Their premium remains `null`. Leaving the optional premium empty also means `null`, not zero. Zero would be a recorded amount; empty means no amount was supplied.
 
 There is nothing special about renewals in this mechanism. It is a small example of a module acquiring a new input and a new storage requirement.
 
 ## The host does not need rebuilding
 
-The demonstration uses [`Foundation.Host`](https://github.com/elsa-workflows/elsa-foundation/blob/5be960a1becf8e2b2bd8c2bb09ab60aa182962b3/src/apps/Elsa.Foundation.Host/Elsa.Foundation.Host.csproj), which has no build-time references to the Elsa feature implementations. It still references shared contracts and host infrastructure. Nuplane acquires the feature packages and the custom module packages at runtime. That includes the workflow and authentication features used by the sample.
+[`Foundation.Host`](https://github.com/elsa-workflows/elsa-foundation/blob/5be960a1becf8e2b2bd8c2bb09ab60aa182962b3/src/apps/Elsa.Foundation.Host/Elsa.Foundation.Host.csproj) has no build-time references to the Elsa feature implementations. It still references shared contracts and host infrastructure. Nuplane acquires the feature packages and custom module packages at runtime. That includes capabilities such as workflows and authentication.
 
 The host supplies the foundation for composition; the packages supply the capabilities. A shell is the active composition of those capabilities inside the host.
 
-For this update, we replace module packages and explicitly reload that composition. We do not rebuild or replace the host binary. Across the recorded upgrade, both host process IDs and the host binary hashes remained unchanged.
+To update a module, replace its packages and explicitly reload that composition. The host binary does not need rebuilding or replacing for this kind of update, and the host process stays running while its active shell composition changes.
 
-That is module hot reload in this demonstration: new module code in the same running host process. It does not mean the host can accept any arbitrary change, or that everything already executing has automatically moved to the new code.
+That is module hot reload: new module code in the same running host process. It does not mean the host can accept any arbitrary change, or that everything already executing has automatically moved to the new code.
 
 ## A column can exist before the feature is ready
 
@@ -98,7 +98,7 @@ B already installed the package from the same publication. We reload its shell w
 
 I find this distinction useful: preparing the database, activating code and enabling schema-dependent behavior do not have to happen at the same instant.
 
-The demonstrated migration is additive. A destructive change, such as dropping a column still used by old code, needs its own compatibility and rollout plan. This result does not make every schema change safe to run with older readers present.
+This example uses an additive migration. A destructive change, such as dropping a column still used by old code, needs its own compatibility and rollout plan. Schema compatibility checks do not make every schema change safe to run with older readers present.
 
 ## Studio makes the contract change explicit
 
@@ -114,11 +114,11 @@ In Studio, we refresh the activity catalog, select the Register renewal node, an
 
 *The upgraded occurrence exposes the optional decimal input.*
 
-The fresh browser walkthrough shows that linked draft test completing and a new row with a numeric premium of `1250`. The earlier row remains intact. Running the activity again creates another renewal record, even when the policy reference is the same.
+The linked draft test completes and creates a row with a numeric premium of `1250`. The earlier row remains intact. This activity creates another renewal record each time it runs, even when the policy reference is the same.
 
 ![The linked Studio test run completed using RegisterRenewal 1.1.0 with premium 1250 and zero incidents.](../assets/2026-10-05-elsa-4-modules-without-restart/06-completed-premium-run.jpg)
 
-*This fresh capture is a draft test run after saving and publishing. Its linked execution shows contract `1.1.0`, the evaluated premium and zero incidents.*
+*Studio's linked draft test shows contract `1.1.0`, the evaluated premium and zero incidents.*
 
 ![Both hosts serve 1.1.0 with premium available, beside the old empty-premium row and new 1250 row.](../assets/2026-10-05-elsa-4-modules-without-restart/07-ready-with-preserved-data.jpg)
 
@@ -130,30 +130,28 @@ Refreshing the catalog and changing a node's contract are separate choices. Refr
 
 There is another boundary here that is easy to miss.
 
-An activity node can retain contract `1.0.0` after the module has been updated. In this sample, the old contract can run against the newer implementation because the original input is preserved and the premium is optional. The earlier rehearsal included an untouched original-contract workflow completing after the upgrade.
+An activity node can retain contract `1.0.0` after the module has been updated. In this example, the old contract can run against the newer implementation because the original input is preserved and the premium is optional.
 
 But that is compatibility with newer code. It is not proof that the runtime retained the old binary for that node.
 
 The current CLR activity resolver uses one locally registered class per activity alias. A node's semantic contract version does not select a side-by-side package implementation. After the update, a node still using the older contract can execute the currently loaded newer class.
 
-The reverse direction deserves care too. If a newer contract containing `ProposedPremium` is dispatched to an older worker, that worker's activity class has no corresponding property. The [current hydration path](https://github.com/elsa-workflows/elsa-foundation/blob/5be960a1becf8e2b2bd8c2bb09ab60aa182962b3/src/essentials/Activities/Runtime/Services/ActivityInputHydrator.cs#L33-L36) can fail there. I verified that path in source; we did not freshly reproduce that exact misrouting failure in the browser rehearsal.
+The reverse direction deserves care too. If a newer contract containing `ProposedPremium` is dispatched to an older worker, that worker's activity class has no corresponding property. The [current hydration path](https://github.com/elsa-workflows/elsa-foundation/blob/5be960a1becf8e2b2bd8c2bb09ab60aa182962b3/src/essentials/Activities/Runtime/Services/ActivityInputHydrator.cs#L33-L36) can fail when a contract input has no matching property on the locally loaded class.
 
 The schema gate does not provide capability-aware worker routing. It checks schema compatibility, not whether a particular worker has the activity inputs needed by a particular execution.
 
-[Foundation issue #2312](https://github.com/elsa-workflows/elsa-foundation/issues/2312) records the gap between a pinned activity contract and the locally loaded class, and asks for missing-input diagnostics before execution. Binding a node to a retained package release, or dispatching only to workers with the required capabilities, are possible enhancements. They are not capabilities demonstrated here.
+[Foundation issue #2312](https://github.com/elsa-workflows/elsa-foundation/issues/2312) records the gap between a pinned activity contract and the locally loaded class, and asks for missing-input diagnostics before execution. Binding a node to a retained package release, or dispatching only to workers with the required capabilities, are possible enhancements rather than guarantees of the current contract-versioning mechanism.
 
 If you maintain custom activities, preserving the old contract is therefore still your responsibility when replacing an implementation in place. Removing or renaming inputs is a different kind of update from adding an optional one.
 
-## What we proved, and what remains open
+## Compatibility still needs a rollout plan
 
-The 5 October demonstration includes actual cockpit and Studio browser interactions, plus a separate authenticated API rehearsal. It covers one shared publication, independent package installation, activation refusal before migration, migration application, staggered shell reloads, mixed-fleet feature dormancy, and a completed workflow using the new input. Both host processes and their binaries stayed in place through the measured upgrade.
+Hot reload removes the need to restart the host process for compatible module updates. It does not replace deployment design.
 
-The screenshots above come from a fresh local walkthrough after an authorized reset. We checked the host PIDs and binary hashes before and after that update. Studio's first baseline publication needed recovery after an activation error; a new publication review succeeded. The two captured executions used Studio's draft test-run path. That preparation issue is part of this run's limits, even though the subsequent module rollout and premium execution completed.
+Migration scripts remain provider-specific. The SQLite column in this example says nothing about how another database provider will execute or lock during its migration. Plan and verify that behavior for the provider you use.
 
-The database rehearsal used SQLite. PostgreSQL migrations exist in source, but this result is not a PostgreSQL rollout test. The setup is a local demonstration, and its timings are not a production performance claim.
-
-It also does not prove uninterrupted service under load, migration of every in-flight workflow, automatic activity-node upgrades, or safe activation of arbitrary package and schema changes. Those need their own evidence.
+In-flight workflow behavior, service continuity under load and destructive schema changes need their own compatibility decisions and verification. A running host process alone is not a guarantee of uninterrupted service. Neither package installation nor catalog refresh automatically upgrades workflow nodes.
 
 What I want from a module update is a clear answer at each step: the package is installed, the schema is ready, this shell is serving the new release, and the fleet can use the new feature. When one of those conditions is missing, I want the system to say so while the previous release keeps doing its job.
 
-That is the part of this demonstration I would keep even if we replaced the renewal example tomorrow.
+Those are separate states, and keeping them visible makes a module update much easier to reason about.

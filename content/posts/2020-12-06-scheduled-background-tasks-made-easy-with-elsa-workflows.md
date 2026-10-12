@@ -8,11 +8,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Tutorial"
-tags:
-  - "aspnetcore"
-  - "elsa"
-  - "quartz"
-  - "workflow"
+tags: ["workflow-authoring", "workflow-runtime"]
 featuredImage: "https://dev-to-uploads.s3.amazonaws.com/uploads/articles/3otvb2z646ytpt1hl2rv.jpg"
 featuredImageAlt: "Scheduled Background Tasks made easy with Elsa Workflows"
 sourceName: "DEV Community"

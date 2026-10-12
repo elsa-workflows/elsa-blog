@@ -7,12 +7,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Engineering"
-tags:
-  - "elsa-workflows"
-  - "dotnet"
-  - "devjournal"
-  - "software-architecture"
-  - "ai"
+tags: ["devjournal", "ai", "extensibility"]
 featuredImage: "../assets/2026-06-26-building-elsa-4-week-7/featured.png"
 featuredImageAlt: "A protected workflow design canvas showing AI authoring behind a trust boundary."
 series: "Building Elsa 4"

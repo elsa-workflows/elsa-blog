@@ -7,12 +7,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Engineering"
-tags:
-  - "elsa-workflows"
-  - "dotnet"
-  - "http-workflows"
-  - "workflow-engine"
-  - "software-architecture"
+tags: ["workflow-runtime", "workflow-authoring"]
 featuredImage: "../assets/2026-07-20-why-elsa-4-http-endpoints-fall-back-to-202/featured.png"
 featuredImageAlt: "A soft 3D workflow diagram splits an HTTP request into synchronous and durable response paths."
 seoTitle: "Why Elsa 4 HTTP Endpoints Fall Back to 202"

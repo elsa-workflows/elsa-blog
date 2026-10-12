@@ -8,12 +8,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Engineering"
-tags:
-  - "elsa-workflows"
-  - "dotnet"
-  - "docker"
-  - "workflow"
-  - "ai-agents"
+tags: ["ai", "workflow-authoring"]
 featuredImage: "https://cdn-images-1.medium.com/max/1200/1*K1pV07McSDkDHbm_2bbLKg.png"
 featuredImageAlt: "AI Agents with Microsoft Agent Framework and Elsa Workflows"
 sourceName: "Medium"

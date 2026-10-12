@@ -8,12 +8,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Engineering"
-tags:
-  - "elsa-workflows"
-  - "dotnet"
-  - "openid-connect"
-  - "studio"
-  - "security"
+tags: ["security", "studio"]
 featuredImage: "../assets/2026-06-14-openid-connect-in-elsa-studio/featured.png"
 featuredImageAlt: "Generated technical illustration of an Elsa Studio workflow designer connecting through an authentication gateway to an identity provider and backend API"
 seoTitle: "OpenID Connect in Elsa Studio 3.7"

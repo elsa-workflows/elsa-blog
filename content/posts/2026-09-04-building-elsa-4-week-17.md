@@ -7,13 +7,7 @@ status: "draft"
 authors:
   - "sipke"
 category: "Engineering"
-tags:
-  - "elsa-workflows"
-  - "dotnet"
-  - "devjournal"
-  - "software-architecture"
-  - "groundwork"
-  - "workflow-runtime"
+tags: ["devjournal", "persistence", "workflow-runtime"]
 series: "Building Elsa 4"
 featuredImage: "../assets/2026-09-04-building-elsa-4-week-17/featured.png"
 featuredImageAlt: "A circular maintenance bench aligns blank implementation records, clears terminal residue, closes a mailbox, and focuses an inspection lens."

@@ -8,11 +8,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Product"
-tags:
-  - "elsa-workflows"
-  - "dotnet"
-  - "workflow"
-  - "operations"
+tags: ["operations", "workflow-runtime"]
 featuredImage: "../assets/2026-06-06-workflow-alterations-in-elsa-3-8/featured.png"
 featuredImageAlt: "Generated technical illustration of a running workflow with a staged alteration plan prepared beside it"
 seoTitle: "Workflow Alterations in Elsa 3.8: Runtime Correction"

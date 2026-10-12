@@ -6,7 +6,7 @@ publishedAt: "2026-07-17"
 status: "published"
 authors: ["sipke"]
 category: "Engineering"
-tags: ["elsa-workflows", "dotnet", "devjournal", "software-architecture"]
+tags: ["devjournal", "workflow-runtime", "studio"]
 series: "Building Elsa 4"
 featuredImage: "../assets/2026-07-17-building-elsa-4-week-10/featured.png"
 featuredImageAlt: "A cobalt executable artifact connects to two publication references and a separate start-authority gate on a dark drafting bench."

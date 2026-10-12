@@ -8,14 +8,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Engineering"
-tags:
-  - "elsa-workflows"
-  - "dotnet"
-  - "orchard-core"
-  - "docker"
-  - "workflow"
-  - "multitenancy"
-  - "modularity"
+tags: ["architecture", "extensibility"]
 featuredImage: "https://cdn-images-1.medium.com/max/800/1*hccxAtUbB0SNsjrh8yXc3Q.png"
 featuredImageAlt: "Abstract modular shell architecture for multi-tenant .NET applications"
 sourceName: "Medium"

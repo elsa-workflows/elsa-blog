@@ -8,12 +8,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Tutorial"
-tags:
-  - "elsa-workflows"
-  - "dotnet"
-  - "orchard-core"
-  - "docker"
-  - "workflow"
+tags: ["workflow-authoring", "extensibility"]
 featuredImage: "https://cdn-images-1.medium.com/max/800/1*8p8UkoB3Bj0A5e1IAtUZsw.png"
 featuredImageAlt: "Building Workflow Driven .NET Core Applications with Elsa"
 sourceName: "Medium"

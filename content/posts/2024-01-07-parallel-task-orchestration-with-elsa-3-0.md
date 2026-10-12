@@ -8,10 +8,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Release"
-tags:
-  - "c-sharp-programming"
-  - "workflow"
-  - "dotnet"
+tags: ["workflow-authoring", "workflow-runtime"]
 featuredImage: "https://cdn-images-1.medium.com/max/1024/1*FrfgJTUCj9IcH9pKz-JMxg.jpeg"
 featuredImageAlt: "Parallel Task Orchestration with ELSA 3.0"
 sourceName: "Medium"

@@ -7,12 +7,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Engineering"
-tags:
-  - "elsa-workflows"
-  - "dotnet"
-  - "devjournal"
-  - "software-architecture"
-  - "workflow-engine"
+tags: ["devjournal", "architecture"]
 featuredImage: "../assets/2026-05-15-building-elsa-4-week-1/featured.png"
 featuredImageAlt: "Glass architecture panels and workflow modules representing Elsa 4 governance."
 series: "Building Elsa 4"

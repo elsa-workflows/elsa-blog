@@ -8,12 +8,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Engineering"
-tags:
-  - "dotnet"
-  - "workflow"
-  - "nuplane"
-  - "nuget"
-  - "plugins"
+tags: ["extensibility", "architecture"]
 featuredImage: "https://cdn-images-1.medium.com/max/1200/1*G0FKt3R3fyuYfxEoHshuHQ.jpeg"
 featuredImageAlt: "Introducing Nuplane: NuGet Packages as a Runtime Primitive"
 sourceName: "Medium"

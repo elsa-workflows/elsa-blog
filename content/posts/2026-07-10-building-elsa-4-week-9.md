@@ -7,14 +7,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Engineering"
-tags:
-  - "elsa-workflows"
-  - "dotnet"
-  - "devjournal"
-  - "software-architecture"
-  - "gitops"
-  - "serialization"
-  - "security"
+tags: ["devjournal", "architecture", "security"]
 featuredImage: "../assets/2026-07-10-building-elsa-4-week-9/featured.png"
 featuredImageAlt: "Three illuminated architectural chambers make workflow definitions, deterministic data, and server-side host control visible as separate boundaries."
 series: "Building Elsa 4"

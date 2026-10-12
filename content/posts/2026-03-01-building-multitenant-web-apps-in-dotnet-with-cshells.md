@@ -8,10 +8,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Engineering"
-tags:
-  - "dotnet"
-  - "multitenancy"
-  - "cshells"
+tags: ["architecture", "security"]
 featuredImage: "https://cdn-images-1.medium.com/max/800/1*_DV5XBtHU1P9L5iYYBeC8A.jpeg"
 featuredImageAlt: "Building Multitenant Web Apps in .NET with CShells"
 sourceName: "Medium"

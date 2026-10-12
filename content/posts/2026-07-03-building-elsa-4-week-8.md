@@ -7,13 +7,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Engineering"
-tags:
-  - "elsa-workflows"
-  - "dotnet"
-  - "devjournal"
-  - "software-architecture"
-  - "workflow-engine"
-  - "runtime-execution-seam"
+tags: ["devjournal", "workflow-runtime", "architecture"]
 featuredImage: "../assets/2026-07-03-building-elsa-4-week-8/featured.png"
 featuredImageAlt: "A luminous runtime execution pipeline connects modular workflow components on a dark blueprint."
 series: "Building Elsa 4"

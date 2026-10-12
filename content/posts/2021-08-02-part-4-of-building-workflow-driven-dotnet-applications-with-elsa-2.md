@@ -8,10 +8,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Tutorial"
-tags:
-  - "elsa-workflows"
-  - "dotnet"
-  - "workflow"
+tags: ["persistence"]
 featuredImage: "https://cdn-images-1.medium.com/max/800/1*GDcj0rEH9P102mdrS9RaBQ.png"
 featuredImageAlt: "Part 4 of Building Workflow Driven .NET Applications with Elsa 2"
 sourceName: "Medium"

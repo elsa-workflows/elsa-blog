@@ -8,12 +8,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Engineering"
-tags:
-  - "elsa-workflows"
-  - "dotnet"
-  - "javascript"
-  - "expressions"
-  - "security"
+tags: ["security", "workflow-authoring", "workflow-runtime"]
 featuredImage: "../assets/2026-08-17-safer-faster-javascript-expressions-elsa-3-9/featured.png"
 featuredImageAlt: "A soft blue JavaScript runtime engine surrounded by timeout, memory, statement, and recursion controls."
 seoTitle: "Safer, Faster JavaScript Expressions in Elsa 3.9"

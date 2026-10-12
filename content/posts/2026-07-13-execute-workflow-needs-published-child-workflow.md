@@ -7,11 +7,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Engineering"
-tags:
-  - "elsa-workflows"
-  - "dotnet"
-  - "child-workflows"
-  - "testing"
+tags: ["workflow-authoring", "workflow-runtime"]
 featuredImage: "../assets/2026-07-13-execute-workflow-needs-published-child-workflow/featured.png"
 featuredImageAlt: "A parent workflow connects through a registry to a verified child workflow"
 seoTitle: "Why ExecuteWorkflow Needs a Published Child Workflow"

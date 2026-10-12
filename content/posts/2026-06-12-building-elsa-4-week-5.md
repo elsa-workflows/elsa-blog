@@ -7,12 +7,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Engineering"
-tags:
-  - "elsa-workflows"
-  - "dotnet"
-  - "devjournal"
-  - "software-architecture"
-  - "workflow-engine"
+tags: ["devjournal", "workflow-runtime", "persistence"]
 featuredImage: "../assets/2026-06-12-building-elsa-4-week-5/featured.png"
 featuredImageAlt: "Glowing spec tiles cascade from a fracture line through a dark architectural blueprint."
 series: "Building Elsa 4"

@@ -7,11 +7,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Engineering"
-tags:
-  - "elsa-workflows"
-  - "dotnet"
-  - "devjournal"
-  - "software-architecture"
+tags: ["devjournal", "architecture"]
 featuredImage: "../assets/2026-05-29-building-elsa-4-week-3/featured.png"
 featuredImageAlt: "Translucent numbered specification cards in a modular grid over a dark technical surface."
 series: "Building Elsa 4"

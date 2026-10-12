@@ -8,11 +8,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Product"
-tags:
-  - "elsa-workflows"
-  - "dotnet"
-  - "opentelemetry"
-  - "observability"
+tags: ["operations"]
 featuredImage: "../assets/2026-06-04-opentelemetry-diagnostics-in-elsa-3-8/featured.png"
 featuredImageAlt: "Generated technical illustration of workflow telemetry signals flowing into a local collector and trace diagnostics workspace"
 seoTitle: "OpenTelemetry Diagnostics in Elsa 3.8: Local OTLP Viewer"

@@ -7,12 +7,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Engineering"
-tags:
-  - "bpmn"
-  - "elsa-workflows"
-  - "dotnet"
-  - "workflow-engine"
-  - "elsa-studio"
+tags: ["workflow-authoring", "workflow-runtime", "studio"]
 featuredImage: "../assets/2026-09-14-bpmn-in-elsa-3-import-bind-run-export/featured.png"
 featuredImageAlt: "A pale technical illustration of a BPMN process document passing through an Elsa-blue binding layer into a running workflow and back again"
 seoTitle: "BPMN in Elsa 3: Import, Bind, Run, and Export"

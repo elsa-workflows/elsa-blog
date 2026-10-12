@@ -8,11 +8,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Tutorial"
-tags:
-  - "elsa-workflows"
-  - "dotnet"
-  - "docker"
-  - "workflow"
+tags: ["workflow-authoring", "studio", "workflow-runtime"]
 featuredImage: "https://cdn-images-1.medium.com/max/800/1*GDcj0rEH9P102mdrS9RaBQ.png"
 featuredImageAlt: "Building Workflow Driven .NET Applications with Elsa 2 — Part 2"
 sourceName: "Medium"

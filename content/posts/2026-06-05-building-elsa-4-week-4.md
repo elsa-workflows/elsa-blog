@@ -7,12 +7,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Engineering"
-tags:
-  - "elsa-workflows"
-  - "dotnet"
-  - "devjournal"
-  - "software-architecture"
-  - "workflow-engine"
+tags: ["devjournal", "architecture", "workflow-runtime"]
 featuredImage: "../assets/2026-06-05-building-elsa-4-week-4/featured.png"
 featuredImageAlt: "Fragmented technical tiles converge into three luminous panels for command, event, and version."
 series: "Building Elsa 4"

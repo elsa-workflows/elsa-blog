@@ -8,11 +8,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Engineering"
-tags:
-  - "elsa-workflows"
-  - "dotnet"
-  - "configuration"
-  - "modularity"
+tags: ["extensibility", "architecture"]
 featuredImage: "../assets/2026-06-07-configuring-elsa-with-shell-features/featured.png"
 featuredImageAlt: "Editorial illustration of a modular workflow host assembled from composable blocks around a central workflow graph"
 seoTitle: "Configuring Elsa with Shell Features: Modular Hosts"

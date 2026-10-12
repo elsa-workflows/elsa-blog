@@ -8,11 +8,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Engineering"
-tags:
-  - "elsa-workflows"
-  - "dotnet"
-  - "studio"
-  - "extensibility"
+tags: ["studio", "extensibility"]
 featuredImage: "../assets/2026-06-08-the-elsa-studio-dashboard-is-split-on-purpose/featured.png"
 featuredImageAlt: "Editorial illustration of a modular operational dashboard assembled from workflow and diagnostics panels around a central workflow view"
 seoTitle: "Elsa Studio Dashboard: Split on Purpose"

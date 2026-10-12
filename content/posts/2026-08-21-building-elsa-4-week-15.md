@@ -6,7 +6,7 @@ publishedAt: "2026-08-21"
 status: "published"
 authors: ["sipke"]
 category: "Engineering"
-tags: ["elsa-workflows", "dotnet", "devjournal", "software-architecture"]
+tags: ["devjournal", "architecture", "security"]
 series: "Building Elsa 4"
 featuredImage: "../assets/2026-08-21-building-elsa-4-week-15/featured.png"
 featuredImageAlt: "A granite contract arch spans removable endpoint components linked through one central permission manifold."

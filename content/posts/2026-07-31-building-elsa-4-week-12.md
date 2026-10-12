@@ -6,7 +6,7 @@ publishedAt: "2026-07-31"
 status: "published"
 authors: ["sipke"]
 category: "Engineering"
-tags: ["elsa-workflows", "dotnet", "devjournal", "software-architecture"]
+tags: ["devjournal", "workflow-runtime", "operations"]
 series: "Building Elsa 4"
 featuredImage: "../assets/2026-07-31-building-elsa-4-week-12/featured.png"
 featuredImageAlt: "A sealed cohort of independent execution capsules sits apart from an authoritative state block reached through a reconnected cable."

@@ -8,12 +8,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Engineering"
-tags:
-  - "elsa-workflows"
-  - "dotnet"
-  - "ai"
-  - "weaver"
-  - "workflow-authoring"
+tags: ["ai", "workflow-authoring", "studio"]
 featuredImage: "../assets/2026-06-15-weaver-grounding-tools-in-elsa-3-8/featured.png"
 featuredImageAlt: "Editorial illustration of a workflow graph connected to server-side AI grounding tools for activities, workflow definitions, runtime instances, and proposals"
 seoTitle: "Weaver Grounding Tools in Elsa 3.8"

@@ -7,12 +7,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Engineering"
-tags:
-  - "elsa-workflows"
-  - "dotnet"
-  - "activity-outputs"
-  - "workflow-authoring"
-  - "extensibility"
+tags: ["extensibility", "workflow-authoring"]
 featuredImage: "../assets/2026-08-03-elsa-output-converters-binding-boundary/featured.png"
 featuredImageAlt: "A native workflow output branches through an optional converter before reaching a bound destination."
 seoTitle: "How Elsa Converts Outputs at the Binding Boundary"

@@ -8,10 +8,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Engineering"
-tags:
-  - "elsa-workflows"
-  - "dotnet"
-  - "workflow"
+tags: ["ai", "workflow-authoring"]
 featuredImage: "https://cdn-images-1.medium.com/max/1200/1*ZLTuS_LxTRqDzKO8WWIh1Q.png"
 featuredImageAlt: "Orchestrating Intelligent Agents with Elsa Workflows"
 sourceName: "Medium"

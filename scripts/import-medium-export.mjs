@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { rootDir } from "./content.mjs";
+import { suggestTags } from "./taxonomy.mjs";
 
 const exportPostsDir = process.argv[2];
 
@@ -60,7 +61,7 @@ function parseExportedPost(file, html) {
     publishedAt,
     status: isDraft ? "draft" : "published",
     category: categoryFor(title),
-    tags: tagsFor(title, bodyText),
+    tags: suggestTags(title),
     featuredImage,
     featuredImageAlt: title,
     sourceName: "Medium",
@@ -113,25 +114,6 @@ function categoryFor(title) {
   }
 
   return "Engineering";
-}
-
-function tagsFor(title, bodyText) {
-  const source = `${title} ${bodyText}`.toLowerCase();
-  const tags = new Set();
-
-  if (source.includes("elsa")) tags.add("elsa-workflows");
-  if (source.includes(".net") || source.includes("asp.net") || source.includes("dotnet")) tags.add("dotnet");
-  if (source.includes("orchard")) tags.add("orchard-core");
-  if (source.includes("graphql")) tags.add("graphql");
-  if (source.includes("openid") || source.includes("open id")) tags.add("openid-connect");
-  if (source.includes("lucene")) tags.add("lucene");
-  if (source.includes("docker")) tags.add("docker");
-  if (source.includes("raspberry")) tags.add("raspberry-pi");
-  if (source.includes("nvm")) tags.add("nodejs");
-  if (source.includes("workflow")) tags.add("workflow");
-  if (source.includes("multitenant") || source.includes("multi-tenant")) tags.add("multitenancy");
-
-  return [...tags].length ? [...tags] : ["engineering"];
 }
 
 function cleanBody(body) {

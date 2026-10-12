@@ -6,7 +6,7 @@ publishedAt: "2026-10-11"
 status: "published"
 authors: ["sipke"]
 category: "Engineering"
-tags: ["elsa-workflows", "elsa-4", "dotnet", "durability", "custom-activities"]
+tags: ["workflow-runtime", "extensibility"]
 featuredImage: "../assets/elsa-4-replay-safe-console-output/featured.png"
 featuredImageAlt: "A replay loop crosses blue workflow blocks between durable checkpoints, with two matching output slips."
 seoTitle: "Elsa 4 Replay Safety: Why Console Lines Can Repeat"

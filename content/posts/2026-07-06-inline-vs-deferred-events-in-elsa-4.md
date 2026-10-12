@@ -7,12 +7,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Engineering"
-tags:
-  - "elsa-workflows"
-  - "dotnet"
-  - "software-architecture"
-  - "workflow-engine"
-  - "events"
+tags: ["architecture", "workflow-runtime", "extensibility"]
 featuredImage: "../assets/2026-07-06-inline-vs-deferred-events-in-elsa-4/featured.png"
 featuredImageAlt: "Generated 3D illustration of Elsa event publishing split into inline and deferred delivery lanes."
 seoTitle: "Inline vs Deferred Events in Elsa 4"

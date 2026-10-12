@@ -8,12 +8,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Engineering"
-tags:
-  - "dotnet"
-  - "logging"
-  - "observability"
-  - "distributed-systems"
-  - "elsa-workflows"
+tags: ["operations"]
 featuredImage: "../assets/2026-05-27-console-log-streaming/featured.png"
 featuredImageAlt: "Dark terminal interface showing console log output streamed to connected clients in real time"
 seoTitle: "Console Log Streaming for .NET Workflow Hosts"

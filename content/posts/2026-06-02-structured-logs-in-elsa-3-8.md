@@ -8,11 +8,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Product"
-tags:
-  - "elsa-workflows"
-  - "dotnet"
-  - "observability"
-  - "logging"
+tags: ["operations"]
 featuredImage: "../assets/2026-06-02-structured-logs-in-elsa-3-8/featured.png"
 featuredImageAlt: "Generated technical illustration of semantic log events flowing from a workflow service into a diagnostics workspace"
 seoTitle: "Structured Logs in Elsa 3.8: Operator Guide"

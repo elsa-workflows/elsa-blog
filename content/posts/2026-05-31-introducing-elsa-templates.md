@@ -8,11 +8,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Product"
-tags:
-  - "elsa-workflows"
-  - "dotnet"
-  - "templates"
-  - "developer-experience"
+tags: ["workflow-authoring"]
 featuredImage: "../assets/2026-05-31-introducing-elsa-templates/featured.png"
 featuredImageAlt: "Generated technical illustration showing project template blocks flowing from a terminal into workflow, server, and Studio-style application components"
 seoTitle: "Introducing Elsa Templates for dotnet new"

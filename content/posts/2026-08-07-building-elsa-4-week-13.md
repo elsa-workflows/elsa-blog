@@ -6,7 +6,7 @@ publishedAt: "2026-08-07"
 status: "published"
 authors: ["sipke"]
 category: "Engineering"
-tags: ["elsa-workflows", "dotnet", "devjournal", "software-architecture"]
+tags: ["devjournal", "operations", "workflow-runtime"]
 series: "Building Elsa 4"
 featuredImage: "../assets/2026-08-07-building-elsa-4-week-13/featured.png"
 featuredImageAlt: "A checkpoint press feeds an incomplete open evidence rail and a complete bounded rail inspected through a brass hoop."

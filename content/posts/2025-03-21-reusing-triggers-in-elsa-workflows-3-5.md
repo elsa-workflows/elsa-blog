@@ -8,11 +8,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Engineering"
-tags:
-  - "elsa-workflows"
-  - "workflow"
-  - "dotnet"
-  - "extensibility"
+tags: ["extensibility", "workflow-authoring"]
 featuredImage: "https://cdn-images-1.medium.com/max/1200/1*e3HFPUDKgWuLPxR7j9-gWw.png"
 featuredImageAlt: "Event-driven workflow illustration for reusable trigger activities in Elsa Workflows"
 sourceName: "Medium"

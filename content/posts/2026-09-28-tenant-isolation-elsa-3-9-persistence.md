@@ -7,12 +7,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Engineering"
-tags:
-  - "elsa-workflows"
-  - "dotnet"
-  - "multitenancy"
-  - "persistence"
-  - "security"
+tags: ["security", "persistence"]
 featuredImage: "../assets/2026-09-28-tenant-isolation-elsa-3-9-persistence/featured.png"
 featuredImageAlt: "Soft 3D illustration of tenant-scoped reads, owned writes, and background workers around shared Elsa persistence"
 seoTitle: "Tenant Isolation in Elsa 3.9 Persistence"

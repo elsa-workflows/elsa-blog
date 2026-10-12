@@ -8,12 +8,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Release"
-tags:
-  - "elsa-workflows"
-  - "dotnet"
-  - "graphql"
-  - "docker"
-  - "workflow"
+tags: ["workflow-authoring", "workflow-runtime", "studio"]
 featuredImage: "https://cdn-images-1.medium.com/max/2560/1*diMew05OXAqAM7xF3T3wVQ.png"
 featuredImageAlt: "What’s new in Elsa 2.0"
 sourceName: "Medium"

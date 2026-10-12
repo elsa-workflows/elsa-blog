@@ -7,13 +7,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Engineering"
-tags:
-  - "elsa-workflows"
-  - "elsa-4"
-  - "dotnet"
-  - "modules"
-  - "database-migrations"
-  - "deployment"
+tags: ["extensibility", "operations", "persistence"]
 featuredImage: "../assets/2026-10-05-elsa-4-modules-without-restart/featured.png"
 featuredImageAlt: "Two modular hosts connected to shared data layers, with an amber replacement module waiting beside a compatibility gate."
 seoTitle: "Elsa 4 Module Updates, Migrations and Schema Compatibility"

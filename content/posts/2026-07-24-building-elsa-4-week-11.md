@@ -6,7 +6,7 @@ publishedAt: "2026-07-24"
 status: "published"
 authors: ["sipke"]
 category: "Engineering"
-tags: ["elsa-workflows", "dotnet", "devjournal", "software-architecture"]
+tags: ["devjournal", "workflow-runtime"]
 series: "Building Elsa 4"
 featuredImage: "../assets/2026-07-24-building-elsa-4-week-11/featured.png"
 featuredImageAlt: "A guarded glass shortcut runs above an intact sequence of discrete scheduler stages before both paths rejoin."

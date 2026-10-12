@@ -7,12 +7,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Engineering"
-tags:
-  - "nativeendpoints"
-  - "aspnet-core"
-  - "minimal-apis"
-  - "dotnet"
-  - "open-source"
+tags: ["architecture", "extensibility"]
 featuredImage: "../assets/2026-08-24-introducing-nativeendpoints/featured.png"
 featuredImageAlt: "NativeEndpoints banner showing a route flowing through an endpoint to a response."
 seoTitle: "Introducing NativeEndpoints for ASP.NET Core"

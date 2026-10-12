@@ -8,12 +8,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Engineering"
-tags:
-  - "elsa-workflows"
-  - "dotnet"
-  - "azure-service-bus"
-  - "kubernetes"
-  - "operations"
+tags: ["operations"]
 featuredImage: "../assets/2026-06-22-stable-instance-names-for-azure-service-bus/featured.png"
 featuredImageAlt: "Generated technical illustration of an Elsa workflow engine connected to bounded Azure Service Bus instance lanes, with faded abandoned lanes in the background"
 seoTitle: "Stable Instance Names for Azure Service Bus in Elsa"

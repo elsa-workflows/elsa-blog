@@ -8,12 +8,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Tutorial"
-tags:
-  - "elsa-workflows"
-  - "dotnet"
-  - "approvals"
-  - "bookmarks"
-  - "workflow-patterns"
+tags: ["workflow-authoring", "workflow-runtime"]
 seoTitle: "Human Approval Workflows in Elsa 3"
 seoDescription: "Model human approvals in Elsa 3: pause on a bookmark, resume with a decision, and loop back on reject so the same workflow instance continues."
 redirectFrom: []

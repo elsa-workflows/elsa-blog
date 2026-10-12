@@ -8,13 +8,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Engineering"
-tags:
-  - "elsa-workflows"
-  - "dotnet"
-  - "state-machines"
-  - "workflow-runtime"
-  - "elsa-studio"
-  - "persistence"
+tags: ["workflow-runtime", "workflow-authoring", "studio"]
 featuredImage: "../assets/2026-08-31-elsa-3-8-state-machine-runtime-studio/featured.png"
 featuredImageAlt: "Soft 3D illustration of blue state nodes connected by a transition path with entry, condition, action, and exit markers"
 seoTitle: "How Elsa 3.8 State Machines Run: Runtime and Studio"

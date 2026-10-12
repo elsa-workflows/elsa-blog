@@ -8,12 +8,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Engineering"
-tags:
-  - "elsa-workflows"
-  - "dotnet"
-  - "upgrades"
-  - "workflow-runtime"
-  - "persistence"
+tags: ["workflow-runtime", "persistence", "operations"]
 featuredImage: "../assets/2026-06-29-suspended-workflows-and-elsa-upgrades/featured.png"
 featuredImageAlt: "Editorial illustration of a durable workflow path crossing from an older runtime version into a newer one while persisted state and bookmarks line up"
 seoTitle: "Suspended Workflows and Elsa Upgrades"

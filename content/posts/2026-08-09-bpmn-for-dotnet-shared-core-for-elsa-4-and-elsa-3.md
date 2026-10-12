@@ -8,12 +8,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Engineering"
-tags:
-  - "bpmn"
-  - "dotnet"
-  - "elsa-workflows"
-  - "workflow-engine"
-  - "open-source"
+tags: ["architecture", "workflow-runtime", "workflow-authoring"]
 featuredImage: "../assets/2026-08-09-bpmn-for-dotnet-shared-core-for-elsa-4-and-elsa-3/featured.png"
 featuredImageAlt: "A technical workbench with one BPMN process core connected to two different workflow runtime structures."
 seoTitle: "BPMN for .NET: One Core for Elsa 4 and Elsa 3"

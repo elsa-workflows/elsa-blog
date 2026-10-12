@@ -7,12 +7,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Engineering"
-tags:
-  - "elsa-workflows"
-  - "dotnet"
-  - "devjournal"
-  - "software-architecture"
-  - "observability"
+tags: ["devjournal", "operations", "security"]
 featuredImage: "../assets/2026-06-19-building-elsa-4-week-6/featured.png"
 featuredImageAlt: "Telemetry streams and diagnostic panels showing an observable workflow engine."
 series: "Building Elsa 4"

@@ -6,7 +6,7 @@ publishedAt: "2026-08-28"
 status: "published"
 authors: ["sipke"]
 category: "Engineering"
-tags: ["elsa-workflows", "dotnet", "devjournal", "software-architecture"]
+tags: ["devjournal", "architecture", "extensibility"]
 series: "Building Elsa 4"
 featuredImage: "../assets/2026-08-28-building-elsa-4-week-16/featured.png"
 featuredImageAlt: "Fixed external connection ports front reorganized API assemblies and an extracted generic toolkit on a side plinth."

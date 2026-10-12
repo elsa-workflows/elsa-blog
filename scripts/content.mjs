@@ -3,6 +3,7 @@ import path from "node:path";
 import matter from "gray-matter";
 import fg from "fast-glob";
 import { z } from "zod";
+import { tagSchema } from "./taxonomy.mjs";
 
 export const rootDir = process.cwd();
 export const contentDir = path.join(rootDir, "content");
@@ -31,7 +32,7 @@ export const postSchema = z.object({
   updatedAt: dateSchema.nullable().optional(),
   status: z.enum(["draft", "published", "archived"]),
   authors: z.array(slugSchema).min(1),
-  tags: z.array(slugSchema),
+  tags: tagSchema,
   category: z.enum(["Product", "Engineering", "Tutorial", "Release", "Community", "Case Study"]),
   featuredImage: z.string().optional(),
   featuredImageAlt: z.string().optional(),

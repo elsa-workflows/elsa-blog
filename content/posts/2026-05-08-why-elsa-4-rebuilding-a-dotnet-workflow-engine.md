@@ -7,12 +7,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Engineering"
-tags:
-  - "elsa-workflows"
-  - "dotnet"
-  - "devjournal"
-  - "software-architecture"
-  - "workflow-engine"
+tags: ["devjournal", "architecture"]
 featuredImage: "../assets/2026-05-08-why-elsa-4-rebuilding-a-dotnet-workflow-engine/featured.png"
 featuredImageAlt: "Elsa Studio workflow editor showing an invoice processing flow with the Weaver assistant panel."
 series: "Building Elsa 4"

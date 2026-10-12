@@ -8,12 +8,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Engineering"
-tags:
-  - "elsa-workflows"
-  - "dotnet"
-  - "elsa-studio"
-  - "identity"
-  - "security"
+tags: ["security", "studio"]
 featuredImage: "../assets/2026-08-10-managing-elsa-users-and-roles-in-studio-3-9/featured.png"
 featuredImageAlt: "A secure Elsa Studio administration workspace organizing users, roles, and permission keys."
 seoTitle: "Managing Elsa Users and Roles in Studio 3.9"

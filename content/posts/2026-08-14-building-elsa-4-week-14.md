@@ -6,7 +6,7 @@ publishedAt: "2026-08-14"
 status: "published"
 authors: ["sipke"]
 category: "Engineering"
-tags: ["elsa-workflows", "dotnet", "devjournal", "software-architecture"]
+tags: ["devjournal", "persistence", "workflow-runtime"]
 series: "Building Elsa 4"
 featuredImage: "../assets/2026-08-14-building-elsa-4-week-14/featured.png"
 featuredImageAlt: "Separate Runtime and Design stores connect through ordered publication stages ending in a distinct receipt tray."

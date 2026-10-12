@@ -8,11 +8,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Product"
-tags:
-  - "elsa-workflows"
-  - "dotnet"
-  - "observability"
-  - "logging"
+tags: ["operations"]
 featuredImage: "../assets/2026-06-03-console-logs-in-elsa-3-8/featured.png"
 featuredImageAlt: "Generated technical illustration of stdout and stderr streams flowing through a capture module into a diagnostics panel"
 seoTitle: "Console Logs in Elsa 3.8: Raw Stream Diagnostics"

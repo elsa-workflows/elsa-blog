@@ -7,12 +7,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Engineering"
-tags:
-  - "elsa-workflows"
-  - "dotnet"
-  - "devjournal"
-  - "software-architecture"
-  - "workflow-engine"
+tags: ["devjournal", "architecture"]
 featuredImage: "../assets/2026-05-22-building-elsa-4-week-2/featured.png"
 featuredImageAlt: "Separated workflow domains exchanging event packets through a mediator hub."
 series: "Building Elsa 4"

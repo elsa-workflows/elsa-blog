@@ -8,13 +8,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Release"
-tags:
-  - "elsa-workflows"
-  - "dotnet"
-  - "release"
-  - "upgrade"
-  - "elsa-studio"
-  - "security"
+tags: ["operations", "security", "studio"]
 featuredImage: "../assets/2026-09-07-elsa-3-8-stable-upgrade-guide/featured.png"
 featuredImageAlt: "Soft 3D illustration of aligned Elsa runtime, Studio, and extension layers with workflow, diagnostics, and security symbols"
 seoTitle: "Elsa 3.8 Is Stable: A Practical Upgrade Guide"

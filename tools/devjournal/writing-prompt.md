@@ -55,7 +55,7 @@ description: "<150-160 chars: the decision/feature + why it matters>"
 series: "Building Elsa 4"
 week: N
 date: "<window end date>"
-tags: [elsa, dotnet, workflow-engine, software-architecture, devjournal]
+tags: [devjournal, architecture]
 ---
 
 ## Where we are on the road  (80-120 words)
@@ -89,6 +89,9 @@ tags: [elsa, dotnet, workflow-engine, software-architecture, devjournal]
 ```
 
 ## STYLE NOTES
+
+- Choose one to three approved tags from `CONTRIBUTING.md`; keep `devjournal`
+  and select up to two topics that reflect this week's actual focus.
 
 - Answer-first paragraphs: each section opens with the takeaway, then evidence.
 - Prefer short paragraphs and concrete nouns over abstractions.

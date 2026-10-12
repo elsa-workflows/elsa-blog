@@ -7,13 +7,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Engineering"
-tags:
-  - "elsa-workflows"
-  - "dotnet"
-  - "serialization"
-  - "persistence"
-  - "events"
-  - "testing"
+tags: ["persistence", "extensibility"]
 featuredImage: "../assets/2026-08-23-why-elsa-payloads-change-shape-after-persistence/featured.png"
 featuredImageAlt: "Soft 3D technical illustration of blue payload objects crossing a persistence gateway, with a type tag preserving one payload's shape while another becomes a property bag"
 seoTitle: "Why Elsa Payloads Change Shape After Persistence"

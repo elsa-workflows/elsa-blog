@@ -8,12 +8,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Engineering"
-tags:
-  - "groundwork"
-  - "dotnet"
-  - "persistence"
-  - "databases"
-  - "elsa-workflows"
+tags: ["persistence", "architecture"]
 featuredImage: "../assets/2026-06-12-groundwork-and-the-persistence-boundary-in-elsa/featured.png"
 featuredImageAlt: "Generated technical illustration of an Elsa workflow engine separating runtime state from provider-neutral storage manifests and database providers"
 seoTitle: "Groundwork: Provider-Neutral Persistence for Elsa"

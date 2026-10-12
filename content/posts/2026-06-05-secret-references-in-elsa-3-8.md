@@ -8,11 +8,7 @@ status: "published"
 authors:
   - "sipke"
 category: "Product"
-tags:
-  - "elsa-workflows"
-  - "dotnet"
-  - "secrets"
-  - "security"
+tags: ["security", "workflow-authoring"]
 featuredImage: "../assets/2026-06-05-secret-references-in-elsa-3-8/featured.png"
 featuredImageAlt: "Generated technical illustration of workflow inputs referencing named secrets stored in a secure module"
 seoTitle: "Secret References in Elsa 3.8: Safer Workflow Inputs"

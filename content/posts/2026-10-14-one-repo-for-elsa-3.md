@@ -11,6 +11,8 @@ tags: ["architecture"]
 seoTitle: "One Repo for Elsa 3: Studio, Extensions and Apps in elsa-core"
 seoDescription: "Elsa 3 Studio, Extensions and Apps now live in elsa-core. What moved, what stays the same, and how to contribute now."
 excerpt: "Studio, Extensions and Apps have moved into elsa-core, so there is one place to file issues, follow changes and contribute."
+featuredImage: "../assets/2026-10-14-one-repo-for-elsa-3/featured.png"
+featuredImageAlt: "Three glossy blue, teal and violet module blocks flowing through clear tubes into one glass container."
 ---
 
 # One Repo for Elsa 3

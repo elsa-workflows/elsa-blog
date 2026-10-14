@@ -30,6 +30,22 @@ First, a quick reminder: Elsa 4 is still a **preview**. Things will change, and 
 
 **A Classic look, and more control over appearance.** Classic is now the default theme for Elsa Studio 4, so if you're coming from Elsa 3 it should feel familiar. There's also a new Settings area with an Appearance page, including a System mode that follows your OS and a reset button. In addition, activities now have their own icons in the palette and on the canvas (extension packages can bring their own), the Home page can be customized, and the bottom console starts closed so you have more room to work.
 
+![The Elsa 4 Studio designer in the Classic light theme, showing a small greeting workflow](../assets/2026-10-14-elsa-progress-update-october-2026/elsa4-classic-light-greet-workflow.png)
+
+*The designer in the Classic theme, light mode.*
+
+![The same greeting workflow in the Elsa 4 Studio designer, Classic theme in dark mode](../assets/2026-10-14-elsa-progress-update-october-2026/elsa4-classic-dark-greet-workflow.png)
+
+*And the same workflow in dark mode.*
+
+Coming next is a more useful default Home page, so Studio greets you with something helpful the moment you sign in. Here's a sneak peek of where it's heading:
+
+![A preview of the upcoming Elsa 4 Studio Home page in the Classic light theme](../assets/2026-10-14-elsa-progress-update-october-2026/elsa4-classic-light-home.png)
+
+![A preview of the upcoming Elsa 4 Studio Home page in the Classic dark theme](../assets/2026-10-14-elsa-progress-update-october-2026/elsa4-classic-dark-home.png)
+
+*A preview of the new Home page, in light and dark. Still in progress, so details may change.*
+
 **Persistence modes.** Workflows can now run in Durable, Balanced or Ephemeral mode, with Balanced as the default. In short: you choose how much a run writes to the database, and trade a bit of safety for speed where that makes sense.
 
 **Housekeeping.** Honestly, a big part of the work was cleanup. We reorganized Foundation and Studio into a clearer layout of Essentials, Extensions and Studio, and we're making internals "internal by default", one area at a time. That keeps the public surface you build on small and deliberate. We also stopped building Docker images on every pull request; they're now built only when changes are merged into main. Less waste, and the images you pull are the ones that actually landed. And we rewrote a good chunk of the docs to make them easier to read, with Studio screenshots added.

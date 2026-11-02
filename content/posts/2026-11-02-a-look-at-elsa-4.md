@@ -3,6 +3,7 @@ title: "A look at Elsa 4"
 slug: "a-look-at-elsa-4"
 description: "A look at Elsa 4, why we are rebuilding it, what is taking shape, and an illustrated guide to its capabilities and architecture."
 publishedAt: "2026-11-02"
+updatedAt: "2026-11-02"
 status: "published"
 authors:
   - "sipke"
@@ -97,3 +98,5 @@ I’m very pleased with how the illustrations turned out. They give each capabil
 I also want to thank [@nexxbiz](https://www.linkedin.com/company/nexxbiz/), and especially [Joey](https://www.linkedin.com/in/joey-barten-6b7082a4/) and [Frans](https://www.linkedin.com/in/frans-van-ek/). They’ve been instrumental in shaping the vision for Elsa 4. I’m grateful for their input, their perspective, and the opportunity to think through that direction together.
 
 [Have a look at the Elsa 4 brochure](https://elsa-four-field-guide.sfmskywalker.chatgpt.site/), and let me know what you think. I’d be interested to hear which parts are relevant to your own applications, and what you’d like to see explained in more detail.
+
+I’m also planning a weekly series that takes one chapter of the brochure at a time and explores it in more detail. Each post will focus on what the capability does, where it’s useful, and how it works, with practical examples along the way.

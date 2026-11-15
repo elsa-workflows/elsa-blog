@@ -3,7 +3,7 @@ title: "Inside the Elsa 4 Kernel"
 slug: "inside-the-elsa-4-kernel"
 description: "How Elsa's proposed execution kernel runs workflows, recovers a missed approval after a crash, and lets hosts, stores and execution models vary independently."
 publishedAt: "2026-11-15"
-status: "draft"
+status: "published"
 authors: ["sipke"]
 category: "Engineering"
 tags: ["architecture", "workflow-runtime", "extensibility"]

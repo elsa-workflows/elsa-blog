@@ -7,8 +7,8 @@ status: "published"
 authors: ["sipke"]
 category: "Engineering"
 tags: ["architecture", "workflow-runtime", "extensibility"]
-featuredImage: "../assets/2026-11-15-inside-the-elsa-4-kernel/kernel-layers.png"
-featuredImageAlt: "The Elsa kernel's three layers and the storage provider that implements its durable commit."
+featuredImage: "../assets/2026-11-15-inside-the-elsa-4-kernel/featured.png"
+featuredImageAlt: "An ink and watercolor sketch of three kernel layers, with a workflow on top, a message entering the middle layer and a detachable storage provider beside it."
 ---
 
 # Inside the Elsa 4 Kernel
@@ -39,6 +39,8 @@ Now return to the awkward case. Suppose the wait explicitly accepts approvals re
 
 The fix was small. In the same transaction that registers this kind of wait, the workflow sends itself a message to check for earlier events. If the node dies, its replacement finds that instruction in the inbox. If the publisher and the recovering owner both find the match, they derive the same delivery ID, so the approval changes the workflow's state once. The simulation can replay the original failure from a single seed. [Prototype findings, case F6](https://github.com/elsa-workflows/elsa-foundation/blob/39edf448e2eca8b1bba5624df643bf9680e9720d/prototypes/kernel-model/FINDINGS.md#f6-a-crash-between-a-subscribing-commit-and-its-read-of-events-loses-the-event-invariant-13-run)
 
+![The approval arrives before the invoice is waiting. Node A commits the wait and a reminder to check earlier events together. After A crashes, node B reads the reminder, finds the approval and resumes the workflow.](../assets/2026-11-15-inside-the-elsa-4-kernel/approval-recovery.svg)
+
 ## What if the old owner comes back?
 
 Imagine node A pauses halfway through preparing that approval. Its lease expires, node B takes the partition, and A wakes up still convinced it's responsible. A lease tells B when it may take over. Elsa also needs a way to reject the write A already prepared.
@@ -51,11 +53,9 @@ There's an important limit here for activity authors. The notification job can s
 
 Once an owner has an instance in memory, it can run several activities without reading the instance back between them. The workflow's persistence mode determines how much progress it saves along the way. We measured the difference on PostgreSQL 17.11 with a workflow of ten no-op activities, started on the node that already owned its partition, with full history configured.
 
-| Persistence mode | What happened in this run | Driver commands | Transaction commits |
-| --- | --- | ---: | ---: |
-| Ephemeral | Finished in memory without waiting | 0 | 0 |
-| Balanced | Ran all ten activities and saved at completion | 1 | 1 |
-| Durable | Saved after each activity | 10 | 10 |
+![Transaction commits for ten no-op activities on PostgreSQL 17.11. Ephemeral used 0, Balanced used 1, and Durable used 10.](../assets/2026-11-15-inside-the-elsa-4-kernel/persistence-commits.png)
+
+Ephemeral finished all ten activities in memory. Balanced committed once at completion. Durable committed after each activity. The driver command counts for these runs were also 0, 1, and 10, respectively.
 
 For a short HTTP workflow, Ephemeral can produce a response without a database call if it finishes in memory. A process crash can lose that run. Balanced saves at a durable wait or completion, so activities since the last checkpoint may run again. Durable shortens that replay window at the cost of more writes. The choice belongs to the workflow author, independently of which database the operator deploys.
 

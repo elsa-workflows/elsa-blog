@@ -28,6 +28,10 @@ For a credential input, Studio offers the Secret picker. For sensitive text, it 
 
 An input evaluation incident can leave the activity scheduled and the workflow running. That is confusing if the run list shows only the lifecycle state. Studio now surfaces run health and links incidents to the affected occurrence and input. If a failed child is inside a collapsed container, the container can show that a child needs attention while keeping its own execution status. [Incident navigation](https://github.com/elsa-workflows/elsa-foundation-studio/pull/556)
 
+![Elsa Studio highlights a Write Line task on the BPMN run canvas and shows its failed Text input in the Issues panel.](../assets/2026-10-09-building-elsa-4-week-22/studio-bpmn-incident.jpg)
+
+*In the October 4 browser verification, selecting the incident cue opens Issues beside the affected BPMN task.*
+
 ## Follow a source change all the way to a run
 
 We also wrote contributor exercises around two small changes you can see for yourself. The Foundation exercise changes the output of Write Line, takes a focused test from failing to passing, and verifies the rebuilt result in a workflow. The Studio exercise follows a visible source change into the running UI, then publishes and inspects a workflow. Each guide records the environment used and restores the temporary edits at the end. [Foundation exercise](https://github.com/elsa-workflows/elsa-foundation/pull/2439), [Studio exercise](https://github.com/elsa-workflows/elsa-foundation-studio/pull/584)

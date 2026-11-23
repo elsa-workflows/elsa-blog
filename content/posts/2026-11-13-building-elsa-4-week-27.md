@@ -29,6 +29,10 @@ This needed a common analysis path. The server now checks source eligibility for
 
 The [Decisions article](/blog/business-rules-in-elsa-4-introducing-decisions) shows how to move an approval policy into a reusable table. This week's Studio work addressed the moment you connect that table to a workflow. The guided **Evaluate Decision** editor uses the selected table's input clauses so you can enter an amount or customer category without writing tagged JSON. Fields stay unset until you enter or confirm a value. In an approval table, a missing amount, an explicit zero, and an empty text value can all have different meanings. [Guided Decision inputs](https://github.com/elsa-workflows/elsa-foundation/pull/3994)
 
+![The sample Studio decision table declares amount as a Number and customerCategory as Text.](../assets/2026-11-09-business-rules-in-elsa-4-introducing-decisions/01-decision-table.png)
+
+*These input clauses in the sample approval table determine the fields shown by the guided Evaluate Decision editor.*
+
 If you create a decision from the picker's **New decision** action, Studio selects it when you return to the workflow. That closes the round trip from needing a policy to adding the reference where it will run. [Decision picker handoff](https://github.com/elsa-workflows/elsa-foundation/pull/4111)
 
 ## Weaver and workflow agents get distinct names

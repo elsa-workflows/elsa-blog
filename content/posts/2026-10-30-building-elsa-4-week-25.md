@@ -29,6 +29,10 @@ A page rendering is a weak test of what actually shipped. The qualification also
 
 The shared BPMN project we introduced in August now runs through the Elsa Foundation host adapter. Elsa adopted version 0.5.0 of Bpmn.Model, Bpmn.Semantics, and Bpmn.Interchange and removed the embedded interpreter and its duplicate pruning rules. Elsa still owns how runtime commands are applied and persisted. Compatibility was checked with execution state captured from the previous writer and with retained authoring and export journeys in Studio. ADR 0063 was accepted after that verification. [Library adoption and retained state](https://github.com/elsa-workflows/elsa-foundation/pull/3338), [ADR acceptance and evidence](https://github.com/elsa-workflows/elsa-foundation/pull/3409)
 
+![Elsa Studio shows a completed BPMN run, its process graph, and the recorded Delay activity in the Timeline panel.](../assets/2026-10-30-building-elsa-4-week-25/studio-bpmn-completed-run.png)
+
+*The BPMN adoption verification opened a completed run in Studio and inspected its timeline beside the process graph.*
+
 The integrations work used another kind of package boundary. The first Integrations SDK made a common home for connector authoring, credential inputs, and authenticated HTTP connections. The first Slack and Microsoft 365 connectors share the HTTP connection and OAuth2 model, with the installer supplying their own app registration. [Integrations SDK](https://github.com/elsa-workflows/elsa-foundation/pull/2825), [Slack connector](https://github.com/elsa-workflows/elsa-foundation/pull/3324), [Microsoft 365 connector](https://github.com/elsa-workflows/elsa-foundation/pull/3332)
 
 And if you were already working in the designer, there was a smaller change you could use right away. A Test Run attaches to the editor canvas. Choose an activity to inspect its recorded run data beside its design-time configuration. For a repeated activity you can select the particular execution you want to inspect. [Test Run inspection](https://github.com/elsa-workflows/elsa-foundation/pull/3401)

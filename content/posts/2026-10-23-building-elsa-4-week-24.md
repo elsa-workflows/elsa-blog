@@ -28,6 +28,10 @@ A forward step can also report an unknown outcome. The scope records it as uncer
 
 Studio now reads the compensation journal and uses it to show what needs attention. For an operator with permission, the options include retrying, resolving an effect after checking the participant, or abandoning the recovery. The journal records the decision. Nested scopes, repeated scopes, and explicit confirmation make it possible to say when a group of effects is still eligible for undo. [Scope nesting and confirmation](https://github.com/elsa-workflows/elsa-foundation/pull/3126), [Operator actions and journal](https://github.com/elsa-workflows/elsa-foundation/pull/3136), [Studio recovery controls](https://github.com/elsa-workflows/elsa-foundation/pull/3140)
 
+![The Studio compensation journal shows Reserve delivery awaiting action after three attempts, with Retry and Resolve available and Reserve inventory still waiting to undo.](../assets/2026-10-23-building-elsa-4-week-24/studio-compensation-recovery.png)
+
+*An October 25 follow-up capture shows the undo order and the operator’s choices after the delivery handler exhausts its attempts.*
+
 The runnable sample covers completed recoveries and an uncertain effect that an operator resolves as absent. It gives extension authors something concrete to run when implementing their own participant and deciding what they can promise on a repeated call. [Compensation sample and qualification record](https://github.com/elsa-workflows/elsa-foundation/pull/3163)
 
 ## A Flowchart starts where the event entered

@@ -9,6 +9,8 @@ category: "Engineering"
 tags: ["devjournal","workflow-authoring","studio"]
 series: "Building Elsa 4"
 related: ["business-rules-in-elsa-4-introducing-decisions"]
+featuredImage: "../assets/2026-11-13-building-elsa-4-week-27/featured.jpg"
+featuredImageAlt: "A single blue cable connects a selected source port to a workflow node’s input socket."
 ---
 
 # Building Elsa 4 · Week 27: Choosing Where Workflow Data Comes From

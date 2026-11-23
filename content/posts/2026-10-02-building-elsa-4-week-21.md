@@ -9,6 +9,8 @@ category: "Engineering"
 tags: ["devjournal","persistence","architecture"]
 series: "Building Elsa 4"
 related: ["elsa-4-modules-without-restart"]
+featuredImage: "../assets/2026-10-02-building-elsa-4-week-21/featured.jpg"
+featuredImageAlt: "Five hosts share a metal bus, with a cobalt cartridge beside the central latch."
 ---
 
 # Building Elsa 4 · Week 21: When Can a Fleet Write a New Schema?

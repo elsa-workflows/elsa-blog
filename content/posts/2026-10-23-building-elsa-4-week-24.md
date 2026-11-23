@@ -8,6 +8,8 @@ authors: ["sipke"]
 category: "Engineering"
 tags: ["devjournal","workflow-runtime","workflow-authoring"]
 series: "Building Elsa 4"
+featuredImage: "../assets/2026-10-23-building-elsa-4-week-24/featured.jpg"
+featuredImageAlt: "Blue tokens follow a return track around a break in the rail, beside a three-panel journal."
 ---
 
 # Building Elsa 4 · Week 24: Undoing Work Across a Process Restart

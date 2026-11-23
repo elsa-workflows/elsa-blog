@@ -34,3 +34,7 @@ We found an edge case almost immediately. When a host died before the first comm
 ## Familiar controls in Studio
 
 Classic became the default theme. The designer also gained in-workflow copy, paste, and duplicate. Copying a group preserves its inputs and the connections within the selection. The copies get fresh node IDs, including remapped IDs inside nested containers, and one undo removes the whole paste. The [October progress update](/blog/elsa-progress-update-october-2026) has screenshots and the wider Elsa 3 context. [Classic theme](https://github.com/elsa-workflows/elsa-foundation/pull/2713), [Designer duplication](https://github.com/elsa-workflows/elsa-foundation/pull/2749)
+
+![Elsa Studio’s Classic light theme shows a greeting workflow with two branches on the designer canvas.](../assets/2026-10-14-elsa-progress-update-october-2026/elsa4-classic-light-greet-workflow.png)
+
+*The greeting workflow in the Classic light theme, from the October Studio preview.*

@@ -23,6 +23,14 @@ In Week 24 a Flowchart learned to enter at the trigger that fired. This week we 
 
 A standalone trigger can be an **Event**, **HTTP**, **Timer**, or **Cron** resource. In Studio, you can manage it under **Operate → Triggers** and add workflow subscriptions, or edit those same live associations from the workflow editor. Each association follows a publication slot and maps its declared inputs. You can change which workflows respond to a shared trigger without saving or publishing their graphs. Graph-owned triggers remain available when the trigger belongs with the authored workflow. [Studio integration](https://github.com/elsa-workflows/elsa-foundation/pull/4580), [Standalone trigger guide](https://github.com/elsa-workflows/elsa-foundation/blob/ee53e40901/docs/standalone-triggers.md)
 
+![Elsa Studio shows a paused shared Event trigger with an enabled workflow subscription for the default publication slot.](../assets/2026-11-23-building-elsa-4-week-29/studio-trigger-subscriptions.png)
+
+*Trigger details show the shared event and the publication slot selected by its subscription.*
+
+![The workflow designer’s Triggers tab shows the live Event subscription beside the workflow graph.](../assets/2026-11-23-building-elsa-4-week-29/studio-workflow-triggers.png)
+
+*The workflow editor exposes the same live subscription in its Triggers tab. Both captures come from the November 22 verification.*
+
 For example, one recurring trigger could start two published workflows, each with its own input mapping. If you look at delivery later, Studio distinguishes a dispatch that was committed from an execution it actually observed. A planned run ID can exist before a worker has started the run. For extension authors, the delivery includes public contracts for trigger metadata, validation, and ingress, and an optional custom Studio editor. [Delivery evidence model](https://github.com/elsa-workflows/elsa-foundation/pull/4580), [Separately built extension consumers](https://github.com/elsa-workflows/elsa-foundation/pull/4582)
 
 This is an opt-in host composition. The recorded local qualification ran seven composed journeys across seven Studio appearances, for 49 passing cases. It covered real Event, Timer, Cron and HTTP behavior, restart recovery, BPMN worker inputs, and extension and access boundaries. Hosted CI and independent review were waived for this merge. The delivery record describes the qualified profiles and the separate resulting-main checks. [Composed qualification](https://github.com/elsa-workflows/elsa-foundation/pull/4584), [Delivery and verification record](https://github.com/elsa-workflows/elsa-foundation/blob/ee53e40901/specs/1217-standalone-triggers/evidence/delivery-2026-11-22.md)

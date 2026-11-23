@@ -31,4 +31,8 @@ Imagine a feature that adds a searchable field to existing notes. A newer host c
 
 We added two releases of a sample Notes module and a rehearsal for loading them through Foundation Host. The runbook includes the single-host scenario on SQLite and the in-place upgrade scenario on PostgreSQL. The same scenario later became the walkthrough in the [modules without a restart article](/blog/elsa-4-modules-without-restart). [Demo and rehearsal](https://github.com/elsa-workflows/elsa-foundation/pull/2171)
 
+![The Notes module demo shows Host A serving version 1.1.0, Host B serving version 1.0.0, and premium preview waiting for both hosts.](../assets/2026-10-05-elsa-4-modules-without-restart/03-mixed-fleet.jpg)
+
+*In the Notes rehearsal, Host A has reloaded. The premium field stays dormant while Host B still serves the older module.*
+
 The other tool that landed this week works earlier in the process. The offline composition planner reads a catalog and a composition file and explains the selected features, dependencies, and unresolved findings before the host starts. It reports persistence evidence as unchecked, so a successful plan still leaves the operator with a separate validation step. [Offline composition plan](https://github.com/elsa-workflows/elsa-foundation/pull/2002)

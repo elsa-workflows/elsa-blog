@@ -3,7 +3,7 @@ title: "Building Elsa 4 · Week 17: Closing the Loop"
 slug: "building-elsa-4-week-17"
 description: "Week 17 closes implementation records, adopts Groundwork 0.4.0-preview.1, and strengthens Elsa 4's runtime and Studio boundaries."
 publishedAt: "2026-09-04"
-status: "draft"
+status: "published"
 authors:
   - "sipke"
 category: "Engineering"

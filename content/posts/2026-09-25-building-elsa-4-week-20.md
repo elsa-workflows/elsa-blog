@@ -8,6 +8,8 @@ authors: ["sipke"]
 category: "Engineering"
 tags: ["devjournal","persistence","operations"]
 series: "Building Elsa 4"
+featuredImage: "../assets/2026-09-25-building-elsa-4-week-20/featured.jpg"
+featuredImageAlt: "A caliper measures a slotted steel plate where it fits into a server module."
 ---
 
 # Building Elsa 4 · Week 20: Migrating the Host You Actually Deploy

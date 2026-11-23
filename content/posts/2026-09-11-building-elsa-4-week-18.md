@@ -9,6 +9,8 @@ category: "Engineering"
 tags: ["devjournal","persistence","operations"]
 series: "Building Elsa 4"
 related: ["groundwork-and-the-persistence-boundary-in-elsa"]
+featuredImage: "../assets/2026-09-11-building-elsa-4-week-18/featured.jpg"
+featuredImageAlt: "Blue workflow tokens on a steel rail beside a separate teal channel and a chamber of diagnostic beads."
 ---
 
 # Building Elsa 4 · Week 18: What the Diagnostics Drain Taught Us

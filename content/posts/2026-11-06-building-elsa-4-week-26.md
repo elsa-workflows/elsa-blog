@@ -8,6 +8,8 @@ authors: ["sipke"]
 category: "Engineering"
 tags: ["devjournal","studio","ai"]
 series: "Building Elsa 4"
+featuredImage: "../assets/2026-11-06-building-elsa-4-week-26/featured.jpg"
+featuredImageAlt: "Three blue drafting panes retain different workflows beside an ivory checklist."
 ---
 
 # Building Elsa 4 · Week 26: Keeping Your Place in Studio

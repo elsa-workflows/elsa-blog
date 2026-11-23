@@ -9,6 +9,8 @@ category: "Engineering"
 tags: ["devjournal","workflow-runtime","studio"]
 series: "Building Elsa 4"
 related: ["elsa-progress-update-october-2026"]
+featuredImage: "../assets/2026-10-16-building-elsa-4-week-23/featured.jpg"
+featuredImageAlt: "A runtime module and a blue workflow panel share a base with three lanes of differently spaced stops."
 ---
 
 # Building Elsa 4 · Week 23: One Repo and Three Persistence Modes

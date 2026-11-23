@@ -9,6 +9,8 @@ category: "Engineering"
 tags: ["devjournal","architecture","workflow-runtime"]
 series: "Building Elsa 4"
 related: ["inside-the-elsa-4-kernel"]
+featuredImage: "../assets/2026-11-20-building-elsa-4-week-28/featured.jpg"
+featuredImageAlt: "A workflow graph sits above blue message tiles and a lower electronics layer on a prototype test bench."
 ---
 
 # Building Elsa 4 · Week 28: Putting the New Execution Kernel on Trial

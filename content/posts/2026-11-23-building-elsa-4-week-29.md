@@ -9,6 +9,8 @@ category: "Engineering"
 tags: ["devjournal","workflow-authoring","workflow-runtime"]
 series: "Building Elsa 4"
 related: ["inside-the-elsa-4-kernel"]
+featuredImage: "../assets/2026-11-23-building-elsa-4-week-29/featured.jpg"
+featuredImageAlt: "A circular trigger hub with four input controls branches out to three separate workflow modules."
 ---
 
 # Building Elsa 4 · Week 29: Giving Shared Triggers a Home of Their Own

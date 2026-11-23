@@ -9,6 +9,8 @@ category: "Engineering"
 tags: ["devjournal","extensibility","architecture"]
 series: "Building Elsa 4"
 related: ["bpmn-for-dotnet-shared-core-for-elsa-4-and-elsa-3"]
+featuredImage: "../assets/2026-10-30-building-elsa-4-week-25/featured.jpg"
+featuredImageAlt: "A keyed coupling joins a blue Studio panel enclosure to a separate branching workflow enclosure."
 ---
 
 # Building Elsa 4 · Week 25: Taking Studio and BPMN Across Package Boundaries

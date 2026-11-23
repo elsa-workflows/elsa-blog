@@ -8,6 +8,8 @@ authors: ["sipke"]
 category: "Engineering"
 tags: ["devjournal","security","workflow-authoring"]
 series: "Building Elsa 4"
+featuredImage: "../assets/2026-10-09-building-elsa-4-week-22/featured.jpg"
+featuredImageAlt: "A blue crystal stays inside a steel vault while sealed reference tags pass along a separate rail."
 ---
 
 # Building Elsa 4 · Week 22: Keeping Secrets Out of Workflow State

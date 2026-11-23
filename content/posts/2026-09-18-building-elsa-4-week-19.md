@@ -8,6 +8,8 @@ authors: ["sipke"]
 category: "Engineering"
 tags: ["devjournal","persistence","architecture"]
 series: "Building Elsa 4"
+featuredImage: "../assets/2026-09-18-building-elsa-4-week-19/featured.jpg"
+featuredImageAlt: "Four distinct persistence cartridges fitted side by side into a shared blue-backed rack."
 ---
 
 # Building Elsa 4 · Week 19: Why We Went Back to EF Core
